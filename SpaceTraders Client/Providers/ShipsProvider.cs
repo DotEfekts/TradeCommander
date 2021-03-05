@@ -168,7 +168,7 @@ namespace SpaceTraders_Client.Providers
             else if(args[0].ToLower() == "list")
             {
                 _console.WriteLine("Displaying ship list.");
-                _navManager.NavigateTo("/ships");
+                _navManager.NavigateTo(_navManager.BaseUri + "ships");
             }
             else if(args[0].ToLower() == "cargo")
             {
@@ -180,7 +180,7 @@ namespace SpaceTraders_Client.Providers
                     if (shipData != null)
                     {
                         _console.WriteLine("Displaying cargo for " + shipData.DisplayName + ".");
-                        _navManager.NavigateTo("/ships/cargo/" + shipData.ServerId);
+                        _navManager.NavigateTo(_navManager.BaseUri + "ships/cargo/" + shipData.ServerId);
                     }
                     else
                         _console.WriteLine("Invalid ship id. Please use number ids and not the full string id.");
@@ -213,7 +213,7 @@ namespace SpaceTraders_Client.Providers
 
                                 _stateEvents.TriggerUpdate(this, "flightStarted");
                                 _console.WriteLine("Flight started successfully. Destination: " + args[2].ToUpper() + ".");
-                                _navManager.NavigateTo("/ships");
+                                _navManager.NavigateTo(_navManager.BaseUri + "ships");
                             }
                             else
                             {

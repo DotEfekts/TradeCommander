@@ -53,7 +53,7 @@
     protected override void OnInitialized()
     {
         if (!NavManager.ToBaseRelativePath(NavManager.Uri).StartsWith("ships"))
-            NavManager.NavigateTo("/ships");
+            NavManager.NavigateTo(NavManager.BaseUri + "ships");
 
         StateEvents.StateChange += HandleStateUpdate;
 

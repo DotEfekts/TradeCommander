@@ -69,12 +69,12 @@ namespace SpaceTraders_Client.Providers
                 else if(args.Length == 1)
                 {
                     _console.WriteLine("Displaying ship list.");
-                    _navManager.NavigateTo("/shipyard");
+                    _navManager.NavigateTo(_navManager.BaseUri + "shipyard");
                 }
                 else
                 {
                     _console.WriteLine("Displaying purchase location list.");
-                    _navManager.NavigateTo("/shipyard/" + args[1].ToUpper());
+                    _navManager.NavigateTo(_navManager.BaseUri + "shipyard/" + args[1].ToUpper());
                 }
             }
             else if(args[0].ToLower() == "buy")

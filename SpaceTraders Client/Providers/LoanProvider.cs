@@ -71,7 +71,7 @@ namespace SpaceTraders_Client.Providers
                 else
                 {
                     _console.WriteLine("Displaying loans available.");
-                    _navManager.NavigateTo("/loans");
+                    _navManager.NavigateTo(_navManager.BaseUri + "loans");
                 }
             }
             else if(args[0].ToLower() == "owed")
@@ -81,7 +81,7 @@ namespace SpaceTraders_Client.Providers
                 else
                 {
                     _console.WriteLine("Displaying loans owed.");
-                    _navManager.NavigateTo("/loans/owed");
+                    _navManager.NavigateTo(_navManager.BaseUri + "loans/owed");
                 }
             }
             else if (args[0].ToLower() == "paid")
@@ -91,7 +91,7 @@ namespace SpaceTraders_Client.Providers
                 else
                 {
                     _console.WriteLine("Displaying loans paid.");
-                    _navManager.NavigateTo("/loans/paid");
+                    _navManager.NavigateTo(_navManager.BaseUri + "loans/paid");
                 }
             }
             else if (args[0].ToLower() == "take")

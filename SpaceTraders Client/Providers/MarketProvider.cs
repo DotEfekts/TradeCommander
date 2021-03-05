@@ -122,7 +122,7 @@ namespace SpaceTraders_Client.Providers
                     if (_marketData.ContainsKey(symbol))
                     {
                         _console.WriteLine("Displaying market data for " + symbol + ".");
-                        _navManager.NavigateTo("/markets/" + symbol);
+                        _navManager.NavigateTo(_navManager.BaseUri + "markets/" + symbol);
                     }
                     else
                         _console.WriteLine("Market data unavailable for " + symbol + ".");
@@ -185,7 +185,7 @@ namespace SpaceTraders_Client.Providers
 
                                                     _shipInfo.UpdateShipCargo(purchaseResult.Ship.Id, purchaseResult.Ship.Cargo);
                                                     _stateEvents.TriggerUpdate(this, "cargoPurchased");
-                                                    _navManager.NavigateTo("/ships/cargo/" + shipData.ServerId);
+                                                    _navManager.NavigateTo(_navManager.BaseUri + "ships/cargo/" + shipData.ServerId);
                                                     _console.WriteLine("Cargo purchased successfully. Total cost: " + purchaseResult.Order.Sum(t => t.Total) + " credits.");
                                                 }
                                                 else
@@ -255,7 +255,7 @@ namespace SpaceTraders_Client.Providers
 
                                         _shipInfo.UpdateShipCargo(saleResult.Ship.Id, saleResult.Ship.Cargo);
                                         _stateEvents.TriggerUpdate(this, "cargoSold");
-                                        _navManager.NavigateTo("/ships/cargo/" + shipData.ServerId);
+                                        _navManager.NavigateTo(_navManager.BaseUri + "ships/cargo/" + shipData.ServerId);
                                         _console.WriteLine("Cargo sold successfully. Total made: " + saleResult.Order.Sum(t => t.Total) + " credits.");
                                     }
                                     else

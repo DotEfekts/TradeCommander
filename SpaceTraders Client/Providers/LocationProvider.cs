@@ -49,7 +49,7 @@ namespace SpaceTraders_Client.Providers
             if (args.Length == 0)
             {
                 _console.WriteLine("Displaying systems list.");
-                _navManager.NavigateTo("/systems");
+                _navManager.NavigateTo(_navManager.BaseUri + "systems");
             }
             else if (args[0] == "?" || args[0].ToLower() == "help")
             {
@@ -66,7 +66,7 @@ namespace SpaceTraders_Client.Providers
                 else
                 {
                     _console.WriteLine("Displaying locations list for " + args[1].ToUpper() + ".");
-                    _navManager.NavigateTo("/systems/" + args[1].ToUpper());
+                    _navManager.NavigateTo(_navManager.BaseUri + "systems/" + args[1].ToUpper());
                 }
             }
             else if(args[0].ToLower() == "location")
