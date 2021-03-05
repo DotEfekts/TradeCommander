@@ -1,0 +1,113 @@
+/* /Pages/Loans.razor.rz.scp.css */
+.layout-container[b-iijl1up9fu] {
+  padding-left: 20px; }
+  .layout-container .loans[b-iijl1up9fu] {
+    width: 100%; }
+    .layout-container .loans th[b-iijl1up9fu] {
+      text-align: left; }
+/* /Pages/LoansAvailable.razor.rz.scp.css */
+.layout-container[b-bdfxrh39ht] {
+  padding-left: 20px; }
+  .layout-container .loans[b-bdfxrh39ht] {
+    width: 100%; }
+    .layout-container .loans th[b-bdfxrh39ht] {
+      text-align: left; }
+/* /Pages/Marketplace.razor.rz.scp.css */
+.layout-container[b-ylj9g4p3fo] {
+  padding-left: 20px; }
+  .layout-container .cargo[b-ylj9g4p3fo] {
+    width: 100%; }
+    .layout-container .cargo th[b-ylj9g4p3fo] {
+      text-align: left; }
+/* /Pages/ShipCargo.razor.rz.scp.css */
+.layout-container[b-05jemc6j4e] {
+  padding-left: 20px; }
+  .layout-container .cargo[b-05jemc6j4e] {
+    width: 100%; }
+    .layout-container .cargo th[b-05jemc6j4e] {
+      text-align: left; }
+/* /Pages/Ships.razor.rz.scp.css */
+.layout-container[b-fxpr2hw6ch] {
+  padding-left: 20px; }
+  .layout-container .ships[b-fxpr2hw6ch] {
+    width: 100%; }
+    .layout-container .ships th[b-fxpr2hw6ch] {
+      text-align: left; }
+/* /Pages/Shipyard.razor.rz.scp.css */
+.layout-container[b-1amm0bcyyd] {
+  padding-left: 20px; }
+  .layout-container .shipyard[b-1amm0bcyyd],
+  .layout-container .locations[b-1amm0bcyyd] {
+    width: 100%; }
+    .layout-container .shipyard th[b-1amm0bcyyd],
+    .layout-container .locations th[b-1amm0bcyyd] {
+      text-align: left; }
+/* /Pages/Systems.razor.rz.scp.css */
+.layout-container[b-0lh031a5go] {
+  padding-left: 20px; }
+  .layout-container .scan[b-0lh031a5go] {
+    width: 100%; }
+    .layout-container .scan th[b-0lh031a5go] {
+      text-align: left; }
+/* /Shared/MainLayout.razor.rz.scp.css */
+.page[b-7a28dp4tec] {
+  height: 100%;
+  position: relative;
+  display: flex;
+  flex-direction: row;
+  padding: 0 20px; }
+  .page .body[b-7a28dp4tec] {
+    flex: 1;
+    display: flex;
+    flex-direction: column; }
+    .page .body .info-bar[b-7a28dp4tec] {
+      width: calc(100% + 20px);
+      padding: 5px 20px;
+      border-bottom: 2px solid lime; }
+      .page .body .info-bar .right[b-7a28dp4tec] {
+        float: right; }
+    .page .body .content[b-7a28dp4tec] {
+      flex: 1; }
+  .page .console[b-7a28dp4tec] {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    border-right: 2px solid lime;
+    padding-right: 5px; }
+    .page .console .output[b-7a28dp4tec] {
+      flex: 1;
+      position: relative; }
+      .page .console .output .console-text[b-7a28dp4tec] {
+        position: absolute;
+        bottom: 0;
+        max-height: 100%;
+        width: 100%;
+        margin: 0;
+        padding-right: 5px;
+        overflow-y: auto;
+        white-space: pre-wrap;
+        -ms-overflow-style: none;
+        /* IE and Edge */
+        scrollbar-width: none;
+        /* Firefox */ }
+        .page .console .output .console-text[b-7a28dp4tec]::-webkit-scrollbar {
+          display: none; }
+    .page .console .command-input[b-7a28dp4tec] {
+      display: flex;
+      align-items: center;
+      padding: 10px 0; }
+      .page .console .command-input span[b-7a28dp4tec] {
+        line-height: 1em; }
+      .page .console .command-input input[b-7a28dp4tec] {
+        flex: 1;
+        height: 1em;
+        line-height: 1em;
+        font-size: 1em;
+        width: 100%;
+        padding-left: 13px;
+        outline: none;
+        border: none;
+        background-color: black;
+        font-family: 'Share Tech Mono', monospace;
+        color: lime;
+        text-shadow: 0 0 5px lime; }
