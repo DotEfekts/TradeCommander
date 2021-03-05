@@ -1,0 +1,90 @@
+﻿@page "/"
+@page "/ships"
+@implements IDisposable
+@inject SpaceTradersUserInfo UserInfo
+@inject ShipsProvider ShipInfo
+@inject StateEvents StateEvents
+@inject NavigationManager NavManager
+
+<div class="layout-container">
+    @if (!ShipInfo.HasShips())
+    {
+        @if (ShipInfo.DataRefreshing)
+        {
+            <h3 class="body-title">Loading...</h3>
+        }
+        else
+        {
+            <h3 class="body-title">You do not currently own any ships.</h3>
+        }
+    }
+    else
+    {
+        <h3 class="body-title">Fleet</h3>
+        <table class="ships">
+            <thead>
+                <tr>
+                    <th>Id</th>
+                    <th>Name</th>
+                    <th>Type</th>
+                    <th>Cargo</th>
+                    <th>Fuel</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var shipInfo in ShipInfo.GetShipData())
+                {
+                    <tr>
+                        <td>@shipInfo.Id</td>
+                        <td>@shipInfo.DisplayName</td>
+                        <td>@shipInfo.Ship.Type</td>
+                        <td>@(shipInfo.Ship.MaxCargo - shipInfo.Ship.SpaceAvailable)/@shipInfo.Ship.MaxCargo</td>
+                        <td>@(shipInfo.Ship.Cargo.FirstOrDefault(t => t.Good == "FUEL")?.Quantity ?? 0)</td>
+                        <td>@GetShipStatus(shipInfo.Ship)</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+</div>
+
+@code {
+    protected override void OnInitialized()
+    {
+        if (!NavManager.ToBaseRelativePath(NavManager.Uri).StartsWith("ships"))
+            NavManager.NavigateTo("/ships");
+
+        StateEvents.StateChange += HandleStateUpdate;
+
+        base.OnInitialized();
+    }
+
+    public void Dispose()
+    {
+        StateEvents.StateChange -= HandleStateUpdate;
+    }
+
+    private void HandleStateUpdate(object sender, string type)
+    {
+        if (type == "shipsRefreshed" || type == "shipRenamed" || type == "cargoPurchased" || type == "flightsUpdated")
+            StateHasChanged();
+    }
+
+    private string GetShipStatus(Ship ship)
+    {
+        if (string.IsNullOrWhiteSpace(ship.Location))
+        {
+            var plan = ShipInfo.GetShipData(ship.Id).LastFlightPlan;
+            if(plan == null)
+                return "In Flight - Unknown Plan";
+            else
+                return "In Flight to " + plan.Destination + " - " + Math.Max(0, plan.TimeRemainingInSeconds) + "s";
+
+        }
+        else
+        {
+            return "Docked - " + ship.Location;
+        }
+    }
+}

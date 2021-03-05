@@ -1,0 +1,83 @@
+﻿@page "/markets/{Symbol}"
+@implements IDisposable
+@inject SpaceTradersUserInfo UserInfo
+@inject MarketProvider MarketInfo
+@inject StateEvents StateEvents
+
+<div class="layout-container">
+    @if (market == null)
+    {
+        <h3 class="body-title">Invalid market provided or no data available.</h3>
+    }
+    else
+    {
+        if (market.Marketplace == null || market.Marketplace.Length == 0)
+        {
+            <h3 class="body-title">This market does not hold any goods.</h3>
+        }
+        else
+        {
+            <h3 class="body-title">@market.Symbol Market - Data Age: @(dataAge.Days)d @(dataAge.Hours)h @(dataAge.Minutes)m</h3>
+            <table class="cargo">
+                <thead>
+                    <tr>
+                        <th>Symbol</th>
+                        <th>Quantity Available</th>
+                        <th>Price Per Unit</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var good in market.Marketplace)
+                    {
+                        <tr>
+                            <td>@good.Symbol</td>
+                            <td>@good.Available</td>
+                            <td>@good.PricePerUnit</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+    }
+</div>
+
+@code {
+    [Parameter]
+    public string Symbol { get; set; }
+    private Market market = null;
+    private TimeSpan dataAge = new TimeSpan();
+
+    protected override void OnInitialized()
+    {
+        UpdateMarketData();
+        StateEvents.StateChange += HandleStateUpdate;
+        base.OnInitialized();
+    }
+
+    protected override void OnParametersSet()
+    {
+        UpdateMarketData();
+        base.OnParametersSet();
+    }
+
+    public void Dispose()
+    {
+        StateEvents.StateChange -= HandleStateUpdate;
+    }
+
+    private void HandleStateUpdate(object sender, string type)
+    {
+        if (type == "marketUpdated")
+        {
+            UpdateMarketData();
+            StateHasChanged();
+        }
+    }
+
+    private void UpdateMarketData()
+    {
+        market = MarketInfo.GetMarket(Symbol);
+        if (market != null)
+            dataAge = DateTimeOffset.UtcNow.Subtract(market.RetrievedAt);
+    }
+}

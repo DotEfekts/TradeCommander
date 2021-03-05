@@ -1,0 +1,34 @@
+﻿[
+  {
+    "outputFile": "Pages/Ships.razor.css",
+    "inputFile": "Pages/Ships.razor.scss"
+  },
+  {
+    "outputFile": "Shared/MainLayout.razor.css",
+    "inputFile": "Shared/MainLayout.razor.scss"
+  },
+  {
+    "outputFile": "Pages/ShipCargo.razor.css",
+    "inputFile": "Pages/ShipCargo.razor.scss"
+  },
+  {
+    "outputFile": "Pages/Marketplace.razor.css",
+    "inputFile": "Pages/Marketplace.razor.scss"
+  },
+  {
+    "outputFile": "Pages/Systems.razor.css",
+    "inputFile": "Pages/Systems.razor.scss"
+  },
+  {
+    "outputFile": "Pages/Shipyard.razor.css",
+    "inputFile": "Pages/Shipyard.razor.scss"
+  },
+  {
+    "outputFile": "Pages/LoansAvailable.razor.css",
+    "inputFile": "Pages/LoansAvailable.razor.scss"
+  },
+  {
+    "outputFile": "Pages/LoansOwed.razor.css",
+    "inputFile": "Pages/LoansOwed.razor.scss"
+  }
+]

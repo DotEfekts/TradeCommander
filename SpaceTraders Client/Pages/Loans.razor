@@ -1,0 +1,124 @@
+﻿@using System.Text.Json
+@page "/loans/{LoanType}"
+@implements IDisposable
+@inject HttpClient Http
+@inject JsonSerializerOptions SerializerOptions
+@inject SpaceTradersUserInfo UserInfo
+@inject StateEvents StateEvents
+
+<div class="layout-container">
+    @if (loading)
+    {
+        <h3 class="body-title">Loading...</h3>
+    }
+    else
+    {
+        if (loans == null)
+        {
+            <h3 class="body-title">Loading failed.</h3>
+        }
+        else
+        {
+            <h3 class="body-title">Displaying Loans @(showPaid ? "Paid" : "Owing")</h3>
+            if (loans.Length == 0)
+            {
+                <p>@(showPaid ? "No loans have been paid." : "No loans are currently owing.")</p>
+            }
+            else
+            {
+                <table class="loans">
+                    <thead>
+                        <tr>
+                            @if (!showPaid)
+                            {
+                                <th>Id</th>
+                            }
+                            <th>Type</th>
+                            <th>Repayment Amount</th>
+                            <th>Status</th>
+                            @if (!showPaid)
+                            {
+                                <th>Due</th>
+                            }
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var loan in loans)
+                        {
+                            var dueSpan = loan.Due.Subtract(DateTimeOffset.UtcNow);
+                            <tr>
+                                @if (!showPaid)
+                                {
+                                    <td>@loan.Id</td>
+                                }
+                                <td>@loan.Type</td>
+                                <td>@loan.RepaymentAmount</td>
+                                <td>@loan.Status</td>
+                                @if (!showPaid)
+                                {
+                                    <td>@(dueSpan.Days)d @(dueSpan.Hours)h @(dueSpan.Minutes)m</td>
+                                }
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            }
+        }
+    }
+</div>
+
+@code
+{
+    [Parameter]
+    public string LoanType { get; set; }
+
+    private bool loading = true;
+    private bool showPaid = false;
+    private Loan[] loans = null;
+
+    protected override void OnInitialized()
+    {
+        StateEvents.StateChange += HandleStateUpdate;
+        base.OnInitialized();
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        showPaid = LoanType.ToLower() == "paid";
+        await UpdateLoanData();
+        StateHasChanged();
+
+        base.OnParametersSet();
+    }
+
+    public void Dispose()
+    {
+        StateEvents.StateChange -= HandleStateUpdate;
+    }
+
+    private async void HandleStateUpdate(object sender, string type)
+    {
+        if (type == "loanTaken" || type == "loanPaid")
+        {
+            await UpdateLoanData();
+            StateHasChanged();
+        }
+    }
+
+    private async Task UpdateLoanData()
+    {
+        loading = true;
+        loans = null;
+
+        try
+        {
+            var loanResponse = await Http.GetFromJsonAsync<LoansResponse>("/users/" + UserInfo.UserDetails.Username + "/loans", SerializerOptions);
+            if (loanResponse != null)
+                loans = loanResponse?.Loans.Where(t => showPaid ? t.Status == "PAID" : t.Status != "PAID").ToArray() ?? new Loan[0];
+        }
+        catch (Exception) { }
+
+        loading = false;
+
+    }
+}

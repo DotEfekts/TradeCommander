@@ -1,0 +1,109 @@
+﻿@using System.Text.Json
+@page "/shipyard"
+@page "/shipyard/{ShipType}"
+@inject HttpClient Http
+@inject JsonSerializerOptions SerializerOptions
+
+<div class="layout-container">
+    @if (loading)
+    {
+        <h3 class="body-title">Loading...</h3>
+    }
+    else
+    {
+        if (ships == null && locations == null)
+        {
+            <h3 class="body-title">Could not load shipyard listings. (Does the ship type exist?)</h3>
+        }
+        else if (ships != null)
+        {
+            <h3 class="body-title">Shipyard</h3>
+            <table class="shipyard">
+                <thead>
+                    <tr>
+                        <th>Type</th>
+                        <th>Manufacturer</th>
+                        <th>Class</th>
+                        <th>Max Cargo</th>
+                        <th>Speed</th>
+                        <th>Plating</th>
+                        <th>Weapons</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var ship in ships)
+                    {
+                        <tr>
+                            <td>@ship.Type</td>
+                            <td>@ship.Manufacturer</td>
+                            <td>@ship.Class</td>
+                            <td>@ship.MaxCargo</td>
+                            <td>@ship.Speed</td>
+                            <td>@ship.Plating</td>
+                            <td>@ship.Weapons</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+        else
+        {
+            <h3 class="body-title">Purchase Locations - @ShipType.ToUpper()</h3>
+            <table class="locations">
+                <thead>
+                    <tr>
+                        <th>Location</th>
+                        <th>Price</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var location in locations)
+                    {
+                        <tr>
+                            <td>@location.Location</td>
+                            <td>@location.Price</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+    }
+</div>
+
+@code
+{
+    [Parameter]
+    public string ShipType { get; set; }
+    private bool loading = true;
+    private ShipyardListing[] ships = null;
+    private PurchaseLocation[] locations = null;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        await UpdateShipyardData();
+        base.OnParametersSet();
+    }
+
+    private async Task UpdateShipyardData()
+    {
+        loading = true;
+        ships = null;
+        locations = null;
+
+        try
+        {
+            var shipyardListing = await Http.GetFromJsonAsync<ShipyardResponse>("/game/ships", SerializerOptions);
+            if (string.IsNullOrWhiteSpace(ShipType))
+            {
+                ships = shipyardListing?.Ships;
+            }
+            else
+            {
+                locations = shipyardListing?.Ships.FirstOrDefault(t => t.Type == ShipType.ToUpper())?.PurchaseLocations;
+            }
+        }
+        catch (Exception) { }
+
+        loading = false;
+    }
+}

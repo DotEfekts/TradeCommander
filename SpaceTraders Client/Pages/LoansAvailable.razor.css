@@ -1,0 +1,6 @@
+﻿.layout-container {
+  padding-left: 20px; }
+  .layout-container .loans {
+    width: 100%; }
+    .layout-container .loans th {
+      text-align: left; }

@@ -1,0 +1,108 @@
+﻿@using System.Text.Json
+@page "/systems"
+@page "/systems/{SystemSymbol}"
+@inject HttpClient Http
+@inject JsonSerializerOptions SerializerOptions
+
+<div class="layout-container">
+    @if (scanning)
+    {
+        <h3 class="body-title">Scanning...</h3>
+    }
+    else
+    {
+        if (systems == null && locations == null)
+        {
+            <h3 class="body-title">Scan failed. (Does the system exist?)</h3>
+        }
+        else if (systems != null)
+        {
+            <h3 class="body-title">Displaying Known Systems</h3>
+            <table class="scan">
+                <thead>
+                    <tr>
+                        <th>Symbol</th>
+                        <th>Name</th>
+                        <th>Locations</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var system in systems)
+                    {
+                        <tr>
+                            <td>@system.Symbol</td>
+                            <td>@system.Name</td>
+                            <td>@system.Locations.Length</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+        else
+        {
+            <h3 class="body-title">Displaying Locations - @SystemSymbol.ToUpper()</h3>
+            <table class="scan">
+                <thead>
+                    <tr>
+                        <th>Symbol</th>
+                        <th>Name</th>
+                        <th>Type</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var location in locations)
+                    {
+                        <tr>
+                            <td>@location.Symbol</td>
+                            <td>@location.Name</td>
+                            <td>@location.Type</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+    }
+</div>
+
+@code
+{
+    [Parameter]
+    public string SystemSymbol { get; set; }
+    private bool scanning = true;
+    private Location[] locations = null;
+    private SpaceSystem[] systems = null;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        await UpdateLocationData();
+        base.OnParametersSet();
+    }
+
+    private async Task UpdateLocationData()
+    {
+        scanning = true;
+        systems = null;
+        locations = null;
+
+        if (string.IsNullOrWhiteSpace(SystemSymbol))
+        {
+            try
+            {
+                var locationInfo = await Http.GetFromJsonAsync<GlobalResponse>("/game/systems", SerializerOptions);
+                systems = locationInfo?.Systems;
+            }
+            catch (Exception) { }
+        }
+        else
+        {
+            try
+            {
+                var locationInfo = await Http.GetFromJsonAsync<SystemResponse>("/game/systems/" + SystemSymbol.ToUpper() + "/locations", SerializerOptions);
+                locations = locationInfo?.Locations;
+            }
+            catch (Exception) { }
+        }
+
+        scanning = false;
+    }
+}

@@ -1,0 +1,72 @@
+﻿@using System.Text.Json
+@page "/loans"
+@inject HttpClient Http
+@inject JsonSerializerOptions SerializerOptions
+
+<div class="layout-container">
+    @if (loading)
+    {
+        <h3 class="body-title">Loading...</h3>
+    }
+    else
+    {
+        if (loans == null)
+        {
+            <h3 class="body-title">Loading failed.</h3>
+        }
+        else
+        {
+            <h3 class="body-title">Displaying Available Loans</h3>
+            <table class="loans">
+                <thead>
+                    <tr>
+                        <th>Type</th>
+                        <th>Amount</th>
+                        <th>Collateral Required</th>
+                        <th>Rate</th>
+                        <th>Term Length</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var loan in loans)
+                    {
+                    <tr>
+                        <td>@loan.Type</td>
+                        <td>@loan.Amount</td>
+                        <td>@(loan.CollateralRequired ? "Yes" : "No")</td>
+                        <td>@loan.Rate</td>
+                        <td>@(loan.TermInDays)d</td>
+                    </tr>
+                    }
+                </tbody>
+            </table>
+        }
+    }
+</div>
+
+@code
+{
+    private bool loading = true;
+    private AvailableLoan[] loans = null;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await UpdateLoanData();
+        base.OnParametersSet();
+    }
+
+    private async Task UpdateLoanData()
+    {
+        loading = true;
+        loans = null;
+
+        try
+        {
+            var loanResponse = await Http.GetFromJsonAsync<LoansAvailableResponse>("/game/loans", SerializerOptions);
+            loans = loanResponse?.Loans;
+        }
+        catch (Exception) { }
+
+        loading = false;
+    }
+}
