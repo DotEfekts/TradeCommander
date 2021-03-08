@@ -153,15 +153,11 @@ namespace SpaceTraders_Client.Providers
                         }
                     }
 
-                _stateEvents.TriggerUpdate(this, "flightsUpdated");
-                SaveShipData();
-
                 if (flightsEnded && !DataRefreshing)
-                {
-                    Console.Out.WriteLine("Flight Ended");
-                    _stateEvents.TriggerUpdate(this, "flightEnded");
                     await RefreshShipData();
-                }
+
+                SaveShipData();
+                _stateEvents.TriggerUpdate(this, "flightsUpdated");
             }
         }
 
