@@ -157,7 +157,7 @@ namespace SpaceTraders_Client.Providers
                                     {
                                         if(good.QuantityAvailable > 0)
                                         {
-                                            var spaceLeft = shipData.Ship.Cargo.Sum(t => t.TotalVolume);
+                                            var spaceLeft = shipData.Ship.MaxCargo - shipData.Ship.Cargo.Sum(t => t.TotalVolume);
                                             var shipSpaceExceeded = buyMax || (quantity * good.VolumePerUnit) > spaceLeft;
                                             if (shipSpaceExceeded)
                                                 quantity = spaceLeft / good.VolumePerUnit;
