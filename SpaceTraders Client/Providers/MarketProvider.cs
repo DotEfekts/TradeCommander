@@ -163,39 +163,44 @@ namespace SpaceTraders_Client.Providers
                                             if (quantityAdjusted)
                                                 quantity = good.QuantityAvailable;
 
-                                            if (quantity * good.PricePerUnit <= _userInfo.UserDetails.Credits)
+                                            if (quantity > 0)
                                             {
-                                                if (quantityAdjusted)
-                                                    _console.WriteLine("Insufficient quantity available for purchase. Purchasing maximum.");
-                                                else if (shipSpaceExceeded)
-                                                    _console.WriteLine("Insufficient cargo space available for purchase. Purchasing maximum.");
-
-                                                using var httpResult = await _http.PostAsJsonAsync("/users/" + _userInfo.Username + "/purchase-orders", new TransactionRequest
+                                                if (quantity * good.PricePerUnit <= _userInfo.UserDetails.Credits)
                                                 {
-                                                    ShipId = shipData.ServerId,
-                                                    Good = good.Symbol,
-                                                    Quantity = quantity
-                                                });
+                                                    if (quantityAdjusted)
+                                                        _console.WriteLine("Insufficient quantity available for purchase. Purchasing maximum.");
+                                                    else if (shipSpaceExceeded)
+                                                        _console.WriteLine("Insufficient cargo space available for purchase. Purchasing maximum.");
 
-                                                if (httpResult.StatusCode == HttpStatusCode.Created)
-                                                {
-                                                    var purchaseResult = await httpResult.Content.ReadFromJsonAsync<TransactionResult>(_serializerOptions);
+                                                    using var httpResult = await _http.PostAsJsonAsync("/users/" + _userInfo.Username + "/purchase-orders", new TransactionRequest
+                                                    {
+                                                        ShipId = shipData.ServerId,
+                                                        Good = good.Symbol,
+                                                        Quantity = quantity
+                                                    });
 
-                                                    _userInfo.UserDetails.Credits = purchaseResult.Credits;
+                                                    if (httpResult.StatusCode == HttpStatusCode.Created)
+                                                    {
+                                                        var purchaseResult = await httpResult.Content.ReadFromJsonAsync<TransactionResult>(_serializerOptions);
 
-                                                    _shipInfo.UpdateShipCargo(purchaseResult.Ship.Id, purchaseResult.Ship.Cargo);
-                                                    _stateEvents.TriggerUpdate(this, "cargoPurchased");
-                                                    _navManager.NavigateTo(_navManager.BaseUri + "ships/cargo/" + shipData.ServerId);
-                                                    _console.WriteLine("Cargo purchased successfully. Total cost: " + purchaseResult.Order.Sum(t => t.Total) + " credits.");
+                                                        _userInfo.UserDetails.Credits = purchaseResult.Credits;
+
+                                                        _shipInfo.UpdateShipCargo(purchaseResult.Ship.Id, purchaseResult.Ship.Cargo);
+                                                        _stateEvents.TriggerUpdate(this, "cargoPurchased");
+                                                        _navManager.NavigateTo(_navManager.BaseUri + "ships/cargo/" + shipData.ServerId);
+                                                        _console.WriteLine("Cargo purchased successfully. Total cost: " + purchaseResult.Order.Sum(t => t.Total) + " credits.");
+                                                    }
+                                                    else
+                                                    {
+                                                        var error = await httpResult.Content.ReadFromJsonAsync<ErrorResponse>(_serializerOptions);
+                                                        _console.WriteLine(error.Error.Message);
+                                                    }
                                                 }
                                                 else
-                                                {
-                                                    var error = await httpResult.Content.ReadFromJsonAsync<ErrorResponse>(_serializerOptions);
-                                                    _console.WriteLine(error.Error.Message);
-                                                }
+                                                    _console.WriteLine("Insufficient credits available for purchase.");
                                             }
                                             else
-                                                _console.WriteLine("Insufficient credits available for purchase.");
+                                                _console.WriteLine("Insufficient cargo space available for any purchase of this good.");
                                         }
                                         else
                                             _console.WriteLine("The good specified is not in stock at this ships market.");
