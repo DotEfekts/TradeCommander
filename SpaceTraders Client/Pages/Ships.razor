@@ -25,6 +25,7 @@
                     <th>Name</th>
                     <th>Type</th>
                     <th>Cargo</th>
+                    <th>Speed</th>
                     <th>Fuel</th>
                     <th>Status</th>
                 </tr>
@@ -37,6 +38,7 @@
                         <td>@shipInfo.DisplayName</td>
                         <td>@shipInfo.Ship.Type</td>
                         <td>@(shipInfo.Ship.MaxCargo - shipInfo.Ship.SpaceAvailable)/@shipInfo.Ship.MaxCargo</td>
+                        <td>@shipInfo.Ship.Speed</td>
                         <td>@(shipInfo.Ship.Cargo.FirstOrDefault(t => t.Good == "FUEL")?.Quantity ?? 0)</td>
                         <td>@GetShipStatus(shipInfo.Ship)</td>
                     </tr>
