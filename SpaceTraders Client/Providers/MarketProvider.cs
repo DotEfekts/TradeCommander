@@ -140,7 +140,9 @@ namespace SpaceTraders_Client.Providers
                     {
                         if (!string.IsNullOrWhiteSpace(shipData.Ship.Location))
                         {
-                            if (int.TryParse(args[3], out int quantity))
+                            var quantity = 0;
+                            var buyMax = args[3].ToLower() == "max";
+                            if (buyMax || (int.TryParse(args[3], out quantity) && quantity > 0))
                             {
                                 var response = await RefreshMarketData(shipData.Ship.Location);
                                 _stateEvents.TriggerUpdate(this, "marketUpdated");
@@ -155,9 +157,10 @@ namespace SpaceTraders_Client.Providers
                                     {
                                         if(good.QuantityAvailable > 0)
                                         {
-                                            var shipSpaceExceeded = (quantity * good.VolumePerUnit) > shipData.Ship.SpaceAvailable;
+                                            var spaceLeft = shipData.Ship.Cargo.Sum(t => t.TotalVolume);
+                                            var shipSpaceExceeded = buyMax || (quantity * good.VolumePerUnit) > spaceLeft;
                                             if (shipSpaceExceeded)
-                                                quantity = shipData.Ship.SpaceAvailable / good.VolumePerUnit;
+                                                quantity = spaceLeft / good.VolumePerUnit;
 
                                             var quantityAdjusted = quantity > good.QuantityAvailable;
                                             if (quantityAdjusted)
@@ -167,7 +170,9 @@ namespace SpaceTraders_Client.Providers
                                             {
                                                 if (quantity * good.PricePerUnit <= _userInfo.UserDetails.Credits)
                                                 {
-                                                    if (quantityAdjusted)
+                                                    if(buyMax)
+                                                        _console.WriteLine("Purchasing maximum. Purchase quantity: " + quantity + ".");
+                                                    else if (quantityAdjusted)
                                                         _console.WriteLine("Insufficient quantity available for purchase. Purchasing maximum.");
                                                     else if (shipSpaceExceeded)
                                                         _console.WriteLine("Insufficient cargo space available for purchase. Purchasing maximum.");
@@ -188,7 +193,7 @@ namespace SpaceTraders_Client.Providers
                                                         _shipInfo.UpdateShipCargo(purchaseResult.Ship.Id, purchaseResult.Ship.Cargo);
                                                         _stateEvents.TriggerUpdate(this, "cargoPurchased");
                                                         _navManager.NavigateTo(_navManager.BaseUri + "ships/cargo/" + shipData.ServerId);
-                                                        _console.WriteLine("Cargo purchased successfully. Total cost: " + purchaseResult.Order.Sum(t => t.Total) + " credits.");
+                                                        _console.WriteLine(quantity + " units of cargo purchased successfully. Total cost: " + purchaseResult.Order.Sum(t => t.Total) + " credits.");
                                                     }
                                                     else
                                                     {
@@ -212,7 +217,7 @@ namespace SpaceTraders_Client.Providers
                                     _console.WriteLine("An unknown error occurred while fetching market data. Please try again.");
                             }
                             else
-                                _console.WriteLine("Invalid quantity provided.");
+                                _console.WriteLine("Invalid quantity provided. Must be at least 1.");
                         }
                         else
                             _console.WriteLine("Ship is not currently docked.");
@@ -233,18 +238,21 @@ namespace SpaceTraders_Client.Providers
                     {
                         if (!string.IsNullOrWhiteSpace(shipData.Ship.Location))
                         {
-                            if (int.TryParse(args[3], out int quantity))
+                            var quantity = 0;
+                            var sellMax = args[3].ToLower() == "max";
+                            if (sellMax || (int.TryParse(args[3], out quantity) && quantity > 0))
                             {
                                 var good = shipData.Ship.Cargo.FirstOrDefault(t => t.Good == args[2].ToUpper());
 
                                 if(good != null)
                                 {
-                                    var quantityExceeded = quantity > good.Quantity;
+                                    var quantityExceeded = sellMax || quantity > good.Quantity;
                                     if (quantityExceeded)
-                                    {
                                         quantity = good.Quantity;
+                                    if(!sellMax && quantityExceeded)
                                         _console.WriteLine("Insufficient quantity available for sale. Selling maximum.");
-                                    }
+                                    else if (sellMax)
+                                        _console.WriteLine("Selling maximum. Sell quantity: " + quantity + ".");
 
                                     var httpResult = await _http.PostAsJsonAsync("/users/" + _userInfo.Username + "/sell-orders", new TransactionRequest
                                     {
@@ -261,7 +269,7 @@ namespace SpaceTraders_Client.Providers
                                         _shipInfo.UpdateShipCargo(saleResult.Ship.Id, saleResult.Ship.Cargo);
                                         _stateEvents.TriggerUpdate(this, "cargoSold");
                                         _navManager.NavigateTo(_navManager.BaseUri + "ships/cargo/" + shipData.ServerId);
-                                        _console.WriteLine("Cargo sold successfully. Total made: " + saleResult.Order.Sum(t => t.Total) + " credits.");
+                                        _console.WriteLine(quantity + " units of cargo sold successfully. Total made: " + saleResult.Order.Sum(t => t.Total) + " credits.");
                                     }
                                     else
                                     {
@@ -273,7 +281,7 @@ namespace SpaceTraders_Client.Providers
                                     _console.WriteLine("The good specified could not be found in the ships cargo.");
                             }
                             else
-                                _console.WriteLine("Invalid quantity provided.");
+                                _console.WriteLine("Invalid quantity provided. Must be at least 1.");
                         }
                         else
                             _console.WriteLine("Ship is not currently docked.");
