@@ -37,6 +37,7 @@ namespace SpaceTraders_Client
             builder.Services.AddScoped<LocationProvider>();
             builder.Services.AddScoped<ShipyardProvider>();
             builder.Services.AddScoped<LoanProvider>();
+            builder.Services.AddScoped<HelpProvider>();
             builder.Services.AddScoped<UtilityProvider>();
 
             var host = builder.Build();
@@ -53,6 +54,7 @@ namespace SpaceTraders_Client
             serviceProvider.GetRequiredService<LocationProvider>();
             serviceProvider.GetRequiredService<ShipyardProvider>();
             serviceProvider.GetRequiredService<LoanProvider>();
+            serviceProvider.GetRequiredService<HelpProvider>();
             serviceProvider.GetRequiredService<UtilityProvider>();
         }
     }
