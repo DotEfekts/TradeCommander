@@ -1,3 +1,8 @@
+.message {
+    margin-left: 20px;
+    margin-top: 20px;
+}
+
 .page {
     height: 100%;
     position: relative;
@@ -6,18 +11,18 @@
     padding: 0;
 
     .body {
-        flex: 1;
+        width: 50%;
         display: flex;
         flex-direction: column;
-        padding-right: 20px;
 
         .content {
             flex: 1;
+            max-height: 100%;
         }
     }
 
     .info {
-        flex: 1;
+        width: 50%;
         display: flex;
         flex-direction: column;
         border-right: 2px solid lime;
@@ -85,10 +90,9 @@
                     padding-left: 13px;
                     outline: none;
                     border: none;
-                    background-color: black;
+                    background-color: transparent;
                     font-family: 'Share Tech Mono', monospace;
                     color: lime;
-                    text-shadow: 0 0 5px lime;
                 }
             }
         }

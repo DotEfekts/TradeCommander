@@ -153,15 +153,15 @@ namespace SpaceTraders_Client.Providers
                                     
                                     if (good != null)
                                     {
-                                        if(good.Available > 0)
+                                        if(good.QuantityAvailable > 0)
                                         {
-                                            var shipSpaceExceeded = quantity > shipData.Ship.SpaceAvailable;
+                                            var shipSpaceExceeded = (quantity * good.VolumePerUnit) > shipData.Ship.SpaceAvailable;
                                             if (shipSpaceExceeded)
-                                                quantity = shipData.Ship.SpaceAvailable;
+                                                quantity = shipData.Ship.SpaceAvailable / good.VolumePerUnit;
 
-                                            var quantityAdjusted = quantity > good.Available;
+                                            var quantityAdjusted = quantity > good.QuantityAvailable;
                                             if (quantityAdjusted)
-                                                quantity = good.Available;
+                                                quantity = good.QuantityAvailable;
 
                                             if (quantity * good.PricePerUnit <= _userInfo.UserDetails.Credits)
                                             {

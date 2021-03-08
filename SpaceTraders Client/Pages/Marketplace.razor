@@ -24,16 +24,18 @@
                         <th>Symbol</th>
                         <th>Quantity Available</th>
                         <th>Price Per Unit</th>
+                        <th>Volume Per Unit</th>
                     </tr>
                 </thead>
                 <tbody>
                     @foreach (var good in market.Marketplace)
                     {
-                        <tr>
-                            <td>@good.Symbol</td>
-                            <td>@good.Available</td>
-                            <td>@good.PricePerUnit</td>
-                        </tr>
+                    <tr>
+                        <td>@good.Symbol</td>
+                        <td>@good.QuantityAvailable</td>
+                        <td>@good.PricePerUnit</td>
+                        <td>@good.VolumePerUnit</td>
+                    </tr>
                     }
                 </tbody>
             </table>

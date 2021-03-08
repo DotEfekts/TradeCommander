@@ -25,7 +25,8 @@ namespace SpaceTraders_Client.Models
     {
         public string Symbol { get; set; }
         public int PricePerUnit { get; set; }
-        public int Available { get; set; }
+        public int QuantityAvailable { get; set; }
+        public int VolumePerUnit { get; set; }
     }
 
     public class TransactionRequest

@@ -2,26 +2,30 @@
 @page "/"
 @page "/map"
 @page "/map/{SystemSymbol}"
+@implements IDisposable
+@inject IJSRuntime JS
 @inject HttpClient Http
 @inject JsonSerializerOptions SerializerOptions
 @inject NavigationManager NavManager
+@inject ShipsProvider ShipInfo
+@inject StateEvents StateEvents
 
 <div class="layout-container">
     @if (scanning)
     {
         <h3 class="body-title">Scanning...</h3>
     }
+    else if (locations == null)
+    {
+        <h3 class="body-title">Scan failed. (Does the system exist?)</h3>
+    }
     else
     {
-        if (locations == null)
-        {
-            <h3 class="body-title">Scan failed. (Does the system exist?)</h3>
-        }
-        else
-        {
-            <div>TODO: Map.</div>
-        }
+        <h3 class="body-title">System Map - @(SystemSymbol?.ToUpper() ?? "OE")</h3>
     }
+    <div class="map-container @(locations == null ? "hidden" :"")">
+        <canvas id="map"></canvas>
+    </div>
 </div>
 
 @code
@@ -31,6 +35,12 @@
     private bool scanning = true;
     private Location[] locations = null;
 
+    protected override void OnInitialized()
+    {
+        StateEvents.StateChange += HandleStateUpdate;
+        base.OnInitialized();
+    }
+
     protected override async Task OnParametersSetAsync()
     {
         if (!NavManager.ToBaseRelativePath(NavManager.Uri).StartsWith("map"))
@@ -38,6 +48,20 @@
 
         await UpdateLocationData();
         base.OnParametersSet();
+    }
+
+    public void Dispose()
+    {
+        StateEvents.StateChange -= HandleStateUpdate;
+    }
+
+    private async void HandleStateUpdate(object sender, string type)
+    {
+        if (type == "shipsRefreshed" || type == "shipRenamed" || type == "flightsUpdated")
+        {
+            await InvokeMapDraw();
+            StateHasChanged();
+        }
     }
 
     private async Task UpdateLocationData()
@@ -51,9 +75,25 @@
         {
             var locationInfo = await Http.GetFromJsonAsync<SystemResponse>("/game/systems/" + symbol.ToUpper() + "/locations", SerializerOptions);
             locations = locationInfo?.Locations;
+            await InvokeMapDraw();
         }
         catch (Exception) { }
 
         scanning = false;
+    }
+
+    private async Task InvokeMapDraw()
+    {
+        if(locations != null)
+        {
+            var width = (Math.Max(locations.Max(t => t.X), Math.Abs(locations.Min(t => t.X))) * 2) + 50;
+            var height = (Math.Max(locations.Max(t => t.Y), Math.Abs(locations.Min(t => t.Y))) * 2) + 25;
+            var shipData = new ShipData[0];
+
+            if (ShipInfo.HasShips())
+                shipData = ShipInfo.GetShipData();
+
+            await JS.InvokeVoidAsync("renderMap", locations, width, height, shipData);
+        }
     }
 }

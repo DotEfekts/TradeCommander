@@ -56,8 +56,19 @@ namespace SpaceTraders_Client.Providers
                 _console.WriteLine("SCAN: Provides functions for searching systems for locations.");
                 _console.WriteLine("Usage: Displays details about the systems available - SCAN");
                 _console.WriteLine("Subcommands");
+                _console.WriteLine("map: Displays the map for the specified system - SCAN map <System Symbol>");
                 _console.WriteLine("system: Displays the locations available within the specified system - SCAN system <System Symbol>");
                 _console.WriteLine("location: Prints info about a specific location - SCAN location <Location Symbol>");
+            }
+            else if (args[0].ToLower() == "map")
+            {
+                if (args.Length != 2)
+                    _console.WriteLine("Invalid arguments. (See SCAN help)");
+                else
+                {
+                    _console.WriteLine("Displaying system map for " + args[1].ToUpper() + ".");
+                    _navManager.NavigateTo(_navManager.BaseUri + "map/" + args[1].ToUpper());
+                }
             }
             else if(args[0].ToLower() == "system")
             {
@@ -82,6 +93,8 @@ namespace SpaceTraders_Client.Providers
                         await _console.WriteLine("Symbol: " + locationInfo.Planet.Symbol, 0);
                         await _console.WriteLine("Type: " + locationInfo.Planet.Type, 100);
                         await _console.WriteLine("Name: " + locationInfo.Planet.Name, 100);
+                        if(locationInfo.Planet.AnsibleProgress.HasValue)
+                            await _console.WriteLine("Ansible Progress: " + locationInfo.Planet.AnsibleProgress, 100);
                         await _console.WriteLine("X: " + locationInfo.Planet.X, 100);
                         await _console.WriteLine("Y: " + locationInfo.Planet.Y, 100);
                     }

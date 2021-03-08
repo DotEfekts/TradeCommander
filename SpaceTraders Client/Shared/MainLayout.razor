@@ -1,6 +1,7 @@
 ﻿@using Blazored.LocalStorage;
 @inherits LayoutComponentBase
 @implements IDisposable
+@inject HttpClient Http
 @inject SpaceTradersUserInfo UserInfo
 @inject ConsoleOutput Console
 @inject CommandHandler Commands
@@ -9,9 +10,9 @@
 @inject ISyncLocalStorageService LocalStorage
 
 <div class="page">
-    @if (!UserInfo.StartingDetailsChecked)
+    @if (!gameOffline.HasValue || !UserInfo.StartingDetailsChecked)
     {
-        <div class="loading">Loading...</div>
+        <div class="message">Loading...</div>
     }
     else
     {
@@ -46,6 +47,8 @@
 
 @code
 {
+    private bool? gameOffline = null;
+
     private string commandInput = "";
 
     private List<string> commandHistory = new List<string>();
@@ -58,8 +61,16 @@
     private bool initialMessageShown = false;
 
 
-    protected override void OnInitialized()
+    protected override async Task OnInitializedAsync()
     {
+        try
+        {
+            var result = await Http.GetAsync("/game/status");
+            gameOffline = result.StatusCode != System.Net.HttpStatusCode.OK;
+        }
+        catch (Exception) { gameOffline = true; }
+        finally { StateEvents.TriggerUpdate(this, "gameStatus"); }
+
         Console.OutputUpdated += HandleConsoleUpdate;
         StateEvents.StateChange += HandleStateUpdate;
 
@@ -83,7 +94,7 @@
 
     private void HandleStateUpdate(object sender, string type)
     {
-        if (type == "userChecked")
+        if (type == "userChecked" || type == "gameStatus")
             StateHasChanged();
         if (type == "userLogout")
             initialMessageShown = false;
@@ -99,10 +110,14 @@
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (!initialMessageShown && UserInfo.StartingDetailsChecked)
+        if (!initialMessageShown && UserInfo.StartingDetailsChecked && gameOffline.HasValue)
         {
             initialMessageShown = true;
-            if (UserInfo.UserDetails == null)
+            if (gameOffline == true)
+            {
+                Console.WriteLine("Please refresh to retry.");
+            }
+            else if (UserInfo.UserDetails == null)
             {
                 await Console.WriteLine("User details required.", 500);
                 await Console.WriteLine("Login command: LOGIN <Username> <Token>", 250);
@@ -171,7 +186,11 @@
             {
                 var nextCommand = commandQueue.Dequeue();
                 Console.WriteLine("> " + nextCommand);
-                await Commands.HandleCommand(nextCommand);
+
+                if (gameOffline == true)
+                    Console.WriteLine("SpaceTraders API is offline.");
+                else
+                    await Commands.HandleCommand(nextCommand);
             } while (commandQueue.Any());
             queueRunning = false;
         }

@@ -18,7 +18,7 @@
     }
     else
     {
-        <h3 class="body-title">@shipData.DisplayName - Cargo (@(shipData.Ship.MaxCargo - shipData.Ship.SpaceAvailable)/@shipData.Ship.MaxCargo)</h3>
+        <h3 class="body-title">@shipData.DisplayName - Cargo (@shipData.Ship.Cargo.Sum(t => t.TotalVolume)/@shipData.Ship.MaxCargo)</h3>
         if (shipData.Ship.Cargo == null || shipData.Ship.Cargo.Length == 0)
         {
             <p>This ship does not contain any cargo.</p>
@@ -30,15 +30,19 @@
                     <tr>
                         <th>Cargo Type</th>
                         <th>Quantity</th>
+                        <th>Volume Per Unit</th>
+                        <th>Total Volume</th>
                     </tr>
                 </thead>
                 <tbody>
                     @foreach (var cargo in shipData.Ship.Cargo)
                     {
-                        <tr>
-                            <td>@cargo.Good</td>
-                            <td>@cargo.Quantity</td>
-                        </tr>
+                    <tr>
+                        <td>@cargo.Good</td>
+                        <td>@cargo.Quantity</td>
+                        <td>@(cargo.TotalVolume / cargo.Quantity)</td>
+                        <td>@cargo.TotalVolume</td>
+                    </tr>
                     }
                 </tbody>
             </table>

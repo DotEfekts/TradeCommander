@@ -31,16 +31,16 @@
                 </tr>
             </thead>
             <tbody>
-                @foreach (var shipInfo in ShipInfo.GetShipData())
+                @foreach (var shipData in ShipInfo.GetShipData())
                 {
                     <tr>
-                        <td>@shipInfo.Id</td>
-                        <td>@shipInfo.DisplayName</td>
-                        <td>@shipInfo.Ship.Type</td>
-                        <td>@(shipInfo.Ship.MaxCargo - shipInfo.Ship.SpaceAvailable)/@shipInfo.Ship.MaxCargo</td>
-                        <td>@shipInfo.Ship.Speed</td>
-                        <td>@(shipInfo.Ship.Cargo.FirstOrDefault(t => t.Good == "FUEL")?.Quantity ?? 0)</td>
-                        <td>@GetShipStatus(shipInfo.Ship)</td>
+                        <td>@shipData.Id</td>
+                        <td>@shipData.DisplayName</td>
+                        <td>@shipData.Ship.Type</td>
+                        <td>@shipData.Ship.Cargo.Sum(t => t.TotalVolume)/@shipData.Ship.MaxCargo</td>
+                        <td>@shipData.Ship.Speed</td>
+                        <td>@(shipData.Ship.Cargo.FirstOrDefault(t => t.Good == "FUEL")?.Quantity ?? 0)</td>
+                        <td>@GetShipStatus(shipData.Ship)</td>
                     </tr>
                 }
             </tbody>
@@ -70,8 +70,9 @@
     {
         if (string.IsNullOrWhiteSpace(ship.Location))
         {
-            var plan = ShipInfo.GetShipData(ship.Id).LastFlightPlan;
-            if(plan == null)
+            var info = ShipInfo.GetShipData(ship.Id);
+            var plan = info.LastFlightPlan;
+            if(plan == null || (!ShipInfo.DataRefreshing && info.FlightEnded))
                 return "In Flight - Unknown Plan";
             else
                 return "In Flight to " + plan.Destination + " - " + Math.Max(0, plan.TimeRemainingInSeconds) + "s";

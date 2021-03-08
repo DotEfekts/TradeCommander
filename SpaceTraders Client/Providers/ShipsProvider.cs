@@ -25,6 +25,7 @@ namespace SpaceTraders_Client.Providers
         private Dictionary<string, ShipData> _shipData;
         
         public bool DataRefreshing { get; private set; } = false;
+        public DateTimeOffset LastUpdate { get; private set; } = DateTimeOffset.UtcNow;
 
         private const int FLIGHT_PLAN_UPDATE_INTERVAL = 100;
 
@@ -79,7 +80,9 @@ namespace SpaceTraders_Client.Providers
                     DisplayName = _shipData[id].DisplayName,
                     ServerId = _shipData[id].ServerId,
                     LastFlightPlan = _shipData[id].LastFlightPlan,
-                    Ship = _shipData[id].Ship,
+                    FlightEnded = _shipData[id].FlightEnded,
+                    TimeElapsed = _shipData[id].TimeElapsed,
+                    Ship = _shipData[id].Ship
                 };
             else
                 return null;
@@ -87,7 +90,7 @@ namespace SpaceTraders_Client.Providers
 
         public ShipData GetShipDataByLocalId(string id)
         {
-            var data = _shipData.Values.FirstOrDefault(t => t.Id.ToString() == id);
+            var data = GetReferencedShipData(id);
             if (data != null)
                 return new ShipData
                 {
@@ -95,10 +98,19 @@ namespace SpaceTraders_Client.Providers
                     DisplayName = data.DisplayName,
                     ServerId = data.ServerId,
                     LastFlightPlan = data.LastFlightPlan,
+                    FlightEnded = data.FlightEnded,
+                    TimeElapsed = data.TimeElapsed,
                     Ship = data.Ship
                 };
             else
                 return null;
+        }
+
+        private ShipData GetReferencedShipData(string id)
+        {
+            var data = _shipData.Values.FirstOrDefault(t => t.Id.ToString() == id);
+            data ??= _shipData.Values.FirstOrDefault(t => t.DisplayName.ToLower() == id.ToLower());
+            return data;
         }
 
         public void UpdateShipCargo(string id, Cargo[] cargo)
@@ -122,24 +134,34 @@ namespace SpaceTraders_Client.Providers
         {
             var flightsEnded = false;
             if(_shipData != null)
-                foreach(var ship in _shipData.Values)
+            {
+                foreach (var ship in _shipData.Values)
                     if (string.IsNullOrWhiteSpace(ship.Ship.Location))
                     {
-                        if(ship.LastFlightPlan != null)
+                        if (ship.LastFlightPlan != null && !ship.FlightEnded)
                         {
-                            ship.LastFlightPlan.TimeRemainingInSeconds = (int)Math.Ceiling(ship.LastFlightPlan.ArrivesAt.Subtract(DateTimeOffset.UtcNow).TotalSeconds);
+                            var secondsRemaining = (int)Math.Ceiling(ship.LastFlightPlan.ArrivesAt.Subtract(DateTimeOffset.UtcNow).TotalSeconds);
+                            var secondsPassed = ship.LastFlightPlan.TimeRemainingInSeconds - secondsRemaining;
+                            ship.LastFlightPlan.TimeRemainingInSeconds -= secondsPassed;
+                            ship.TimeElapsed += secondsPassed;
 
-                            if(ship.LastFlightPlan.TimeRemainingInSeconds < 0)
+                            if (ship.LastFlightPlan.TimeRemainingInSeconds < 0)
+                            {
                                 flightsEnded = true;
+                                ship.FlightEnded = true;
+                            }
                         }
                     }
-            _stateEvents.TriggerUpdate(this, "flightsUpdated");
 
-            if (flightsEnded && !DataRefreshing)
-            {
-                Console.Out.WriteLine("Flight Ended");
-                _stateEvents.TriggerUpdate(this, "flightEnded");
-                await RefreshShipData();
+                _stateEvents.TriggerUpdate(this, "flightsUpdated");
+                SaveShipData();
+
+                if (flightsEnded && !DataRefreshing)
+                {
+                    Console.Out.WriteLine("Flight Ended");
+                    _stateEvents.TriggerUpdate(this, "flightEnded");
+                    await RefreshShipData();
+                }
             }
         }
 
@@ -170,7 +192,7 @@ namespace SpaceTraders_Client.Providers
                     _console.WriteLine("Invalid arguments. (See SHIP help)");
                 else
                 {
-                    var shipData = _shipData.Values.FirstOrDefault(t => t.Id.ToString() == args[1]);
+                    var shipData = GetReferencedShipData(args[1]);
                     if (shipData != null)
                     {
                         _console.WriteLine("Displaying cargo for " + shipData.DisplayName + ".");
@@ -186,7 +208,7 @@ namespace SpaceTraders_Client.Providers
                     _console.WriteLine("Invalid arguments. (See SHIP help)");
                 else
                 {
-                    var shipData = _shipData.Values.FirstOrDefault(t => t.Id.ToString() == args[1]);
+                    var shipData = GetReferencedShipData(args[1]);
                     if (shipData != null)
                     {
                         if (!string.IsNullOrWhiteSpace(shipData.Ship.Location))
@@ -202,11 +224,30 @@ namespace SpaceTraders_Client.Providers
                                 var flightResult = await httpResult.Content.ReadFromJsonAsync<FlightResponse>(_serializerOptions);
 
                                 shipData.LastFlightPlan = flightResult.FlightPlan;
+                                shipData.FlightEnded = false;
+                                shipData.TimeElapsed = 0;
+
                                 shipData.Ship.Location = null;
+
+                                var fuel = shipData.Ship.Cargo.FirstOrDefault(t => t.Good == "FUEL");
+                                if (fuel != null)
+                                    if (flightResult.FlightPlan.FuelConsumed >= fuel.Quantity)
+                                    {
+                                        var cargoList = shipData.Ship.Cargo.ToList();
+                                        cargoList.Remove(fuel);
+                                        shipData.Ship.Cargo = cargoList.ToArray();
+                                    }
+                                    else
+                                    {
+                                        fuel.Quantity -= flightResult.FlightPlan.FuelConsumed;
+                                        fuel.TotalVolume -= flightResult.FlightPlan.FuelConsumed;
+                                    }
+
                                 SaveShipData();
 
                                 _stateEvents.TriggerUpdate(this, "flightStarted");
                                 _console.WriteLine("Flight started successfully. Destination: " + args[2].ToUpper() + ".");
+                                _navManager.NavigateTo(_navManager.BaseUri + "map/" + args[2].ToUpper().Split("-")[0]);
                             }
                             else
                             {
@@ -230,7 +271,7 @@ namespace SpaceTraders_Client.Providers
                     _console.WriteLine("Invalid arguments. (See SHIP help)");
                 else
                 {
-                    var shipData = _shipData.Values.FirstOrDefault(t => t.Id.ToString() == args[1]);
+                    var shipData = GetReferencedShipData(args[1]);
                     if (shipData != null)
                     {
                         shipData.DisplayName = args[2];
@@ -249,7 +290,7 @@ namespace SpaceTraders_Client.Providers
                     _console.WriteLine("Invalid arguments. (See SHIP help)");
                 else
                 {
-                    var shipData = _shipData.Values.FirstOrDefault(t => t.Id.ToString() == args[1]);
+                    var shipData = GetReferencedShipData(args[1]);
                     if (shipData != null)
                     {
                         _console.WriteLine("Displaying info for " + shipData.DisplayName + ".");
@@ -274,7 +315,6 @@ namespace SpaceTraders_Client.Providers
         private async Task RefreshShipData()
         {
             DataRefreshing = true;
-            Console.Out.WriteLine("Start Refresh");
 
             if (_userInfo.UserDetails != null)
             {
@@ -282,18 +322,14 @@ namespace SpaceTraders_Client.Providers
                 var ships = shipResponse?.Ships;
 
                 if (_localStorage.ContainKey("ShipData." + _userInfo.Username))
-                {
                     _shipData = _localStorage.GetItem<Dictionary<string, ShipData>>("ShipData." + _userInfo.Username);
-                    foreach(var data in _shipData)
-                        if(data.Value.LastFlightPlan != null)
-                            data.Value.LastFlightPlan.TimeRemainingInSeconds = (int)Math.Ceiling(data.Value.LastFlightPlan.ArrivesAt.Subtract(DateTimeOffset.UtcNow).TotalSeconds);
-                }
-                else
-                {
-                    _shipData = new Dictionary<string, ShipData>();
-                }
+                _shipData ??= new Dictionary<string, ShipData>();
+                
+                foreach (var data in _shipData)
+                    if (data.Value.LastFlightPlan != null)
+                        data.Value.LastFlightPlan.TimeRemainingInSeconds = (int)Math.Ceiling(data.Value.LastFlightPlan.ArrivesAt.Subtract(DateTimeOffset.UtcNow).TotalSeconds);
 
-                if(_shipData.Count > 0)
+                if (_shipData.Count > 0)
                 {
                     if (ships == null)
                         _shipData.Clear();
@@ -321,6 +357,8 @@ namespace SpaceTraders_Client.Providers
                 foreach(var ship in _shipData)
                 {
                     ship.Value.Ship = ships.First(t => t.Id == ship.Key);
+                    var data = ship.Value;
+                    ship.Value.FlightEnded = ship.Value.Ship.Location != null;
                 }
 
                 SaveShipData();
@@ -330,14 +368,16 @@ namespace SpaceTraders_Client.Providers
                 _shipData = null;
             }
 
-            Console.Out.WriteLine("End Refresh");
             DataRefreshing = false;
+            LastUpdate = DateTimeOffset.UtcNow;
+
             _stateEvents.TriggerUpdate(this, "shipsRefreshed");
         }
 
         private void SaveShipData()
         {
-            _localStorage.SetItem("ShipData." + _userInfo.Username, _shipData);
+            if(_shipData != null)
+                _localStorage.SetItem("ShipData." + _userInfo.Username, _shipData);
         }
     }
 }

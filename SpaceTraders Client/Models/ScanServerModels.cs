@@ -35,5 +35,6 @@ namespace SpaceTraders_Client.Models
         public string Name { get; set; }
         public int X { get; set; }
         public int Y { get; set; }
+        public int? AnsibleProgress { get; set; }
     }
 }

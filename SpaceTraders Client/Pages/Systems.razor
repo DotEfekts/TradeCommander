@@ -47,16 +47,20 @@
                         <th>Symbol</th>
                         <th>Name</th>
                         <th>Type</th>
+                        <th>X</th>
+                        <th>Y</th>
                     </tr>
                 </thead>
                 <tbody>
                     @foreach (var location in locations)
                     {
-                        <tr>
-                            <td>@location.Symbol</td>
-                            <td>@location.Name</td>
-                            <td>@location.Type</td>
-                        </tr>
+                    <tr>
+                        <td>@location.Symbol</td>
+                        <td>@location.Name</td>
+                        <td>@location.Type</td>
+                        <td>@location.X</td>
+                        <td>@location.Y</td>
+                    </tr>
                     }
                 </tbody>
             </table>
