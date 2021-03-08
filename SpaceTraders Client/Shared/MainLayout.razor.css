@@ -3,59 +3,70 @@
   position: relative;
   display: flex;
   flex-direction: row;
-  padding: 0 20px; }
+  padding: 0; }
   .page .body {
     flex: 1;
     display: flex;
-    flex-direction: column; }
-    .page .body .info-bar {
-      width: calc(100% + 20px);
-      padding: 5px 20px;
-      border-bottom: 2px solid lime; }
-      .page .body .info-bar .right {
-        float: right; }
+    flex-direction: column;
+    padding-right: 20px; }
     .page .body .content {
       flex: 1; }
-  .page .console {
+  .page .info {
     flex: 1;
     display: flex;
     flex-direction: column;
-    border-right: 2px solid lime;
-    padding-right: 5px; }
-    .page .console .output {
+    border-right: 2px solid lime; }
+    .page .info .info-bar {
+      width: 100%;
+      padding: 5px 20px;
+      border-bottom: 2px solid lime; }
+      .page .info .info-bar .right {
+        float: right; }
+    .page .info .ships {
       flex: 1;
-      position: relative; }
-      .page .console .output .console-text {
-        position: absolute;
-        bottom: 0;
-        max-height: 100%;
-        width: 100%;
-        margin: 0;
-        padding-right: 5px;
-        overflow-y: auto;
-        white-space: pre-wrap;
-        -ms-overflow-style: none;
-        /* IE and Edge */
-        scrollbar-width: none;
-        /* Firefox */ }
-        .page .console .output .console-text::-webkit-scrollbar {
-          display: none; }
-    .page .console .command-input {
+      border-bottom: 2px solid lime;
+      padding-left: 20px;
+      padding-right: 5px; }
+    .page .info .console {
+      flex: 1;
       display: flex;
-      align-items: center;
-      padding: 10px 0; }
-      .page .console .command-input span {
-        line-height: 1em; }
-      .page .console .command-input input {
+      flex-direction: column;
+      padding-left: 20px;
+      padding-right: 5px; }
+      .page .info .console .output {
         flex: 1;
-        height: 1em;
-        line-height: 1em;
-        font-size: 1em;
-        width: 100%;
-        padding-left: 13px;
-        outline: none;
-        border: none;
-        background-color: black;
-        font-family: 'Share Tech Mono', monospace;
-        color: lime;
-        text-shadow: 0 0 5px lime; }
+        position: relative; }
+        .page .info .console .output .console-text {
+          position: absolute;
+          bottom: 0;
+          max-height: 100%;
+          width: 100%;
+          margin: 0;
+          padding-right: 5px;
+          overflow-y: auto;
+          white-space: pre-wrap;
+          -ms-overflow-style: none;
+          /* IE and Edge */
+          scrollbar-width: none;
+          /* Firefox */ }
+          .page .info .console .output .console-text::-webkit-scrollbar {
+            display: none; }
+      .page .info .console .command-input {
+        display: flex;
+        align-items: center;
+        padding: 10px 0; }
+        .page .info .console .command-input span {
+          line-height: 1em; }
+        .page .info .console .command-input input {
+          flex: 1;
+          height: 1em;
+          line-height: 1em;
+          font-size: 1em;
+          width: 100%;
+          padding-left: 13px;
+          outline: none;
+          border: none;
+          background-color: black;
+          font-family: 'Share Tech Mono', monospace;
+          color: lime;
+          text-shadow: 0 0 5px lime; }

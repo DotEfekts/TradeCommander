@@ -1,10 +1,7 @@
-﻿@page "/"
-@page "/ships"
-@implements IDisposable
+﻿@implements IDisposable
 @inject SpaceTradersUserInfo UserInfo
 @inject ShipsProvider ShipInfo
 @inject StateEvents StateEvents
-@inject NavigationManager NavManager
 
 <div class="layout-container">
     @if (!ShipInfo.HasShips())
@@ -52,11 +49,7 @@
 @code {
     protected override void OnInitialized()
     {
-        if (!NavManager.ToBaseRelativePath(NavManager.Uri).StartsWith("ships"))
-            NavManager.NavigateTo(NavManager.BaseUri + "ships");
-
         StateEvents.StateChange += HandleStateUpdate;
-
         base.OnInitialized();
     }
 
@@ -67,7 +60,7 @@
 
     private void HandleStateUpdate(object sender, string type)
     {
-        if (type == "shipsRefreshed" || type == "shipRenamed" || type == "cargoPurchased" || type == "flightsUpdated")
+        if (type == "shipsRefreshed" || type == "shipRenamed" || type == "cargoPurchased" || type == "cargoSold" || type == "flightsUpdated")
             StateHasChanged();
     }
 

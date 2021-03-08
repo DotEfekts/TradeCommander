@@ -3,15 +3,27 @@
     position: relative;
     display: flex;
     flex-direction: row;
-    padding: 0 20px;
+    padding: 0;
 
     .body {
         flex: 1;
         display: flex;
         flex-direction: column;
+        padding-right: 20px;
+
+        .content {
+            flex: 1;
+        }
+    }
+
+    .info {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        border-right: 2px solid lime;
 
         .info-bar {
-            width: calc(100% + 20px);
+            width: 100%;
             padding: 5px 20px;
             border-bottom: 2px solid lime;
 
@@ -20,65 +32,64 @@
             }
         }
 
-        .content {
+        .ships {
             flex: 1;
+            border-bottom: 2px solid lime;
+            padding-left: 20px;
+            padding-right: 5px;
         }
-    }
 
-    .console {
-        flex: 1;
-        display: flex;
-        flex-direction: column;
-        border-right: 2px solid lime;
-        padding-right: 5px;
-
-        .output {
+        .console {
             flex: 1;
-            position: relative;
+            display: flex;
+            flex-direction: column;
+            padding-left: 20px;
+            padding-right: 5px;
 
-            .console-text {
-                position: absolute;
-                bottom: 0;
-                
-                max-height: 100%;
-                width: 100%;
-                
-                margin: 0;
-                padding-right: 5px;
-                
-                overflow-y: auto;
-                white-space: pre-wrap;
+            .output {
+                flex: 1;
+                position: relative;
 
-                -ms-overflow-style: none; /* IE and Edge */
-                scrollbar-width: none; /* Firefox */
-                &::-webkit-scrollbar {
-                    display: none;
+                .console-text {
+                    position: absolute;
+                    bottom: 0;
+                    max-height: 100%;
+                    width: 100%;
+                    margin: 0;
+                    padding-right: 5px;
+                    overflow-y: auto;
+                    white-space: pre-wrap;
+                    -ms-overflow-style: none; /* IE and Edge */
+                    scrollbar-width: none; /* Firefox */
+                    &::-webkit-scrollbar {
+                        display: none;
+                    }
                 }
             }
-        }
 
-        .command-input {
-            display: flex;
-            align-items: center;
-            padding: 10px 0;
+            .command-input {
+                display: flex;
+                align-items: center;
+                padding: 10px 0;
 
-            span {
-                line-height: 1em;
-            }
+                span {
+                    line-height: 1em;
+                }
 
-            input {
-                flex: 1;
-                height: 1em;
-                line-height: 1em;
-                font-size: 1em;
-                width: 100%;
-                padding-left: 13px;
-                outline: none;
-                border: none;
-                background-color: black;
-                font-family: 'Share Tech Mono', monospace;
-                color: lime;
-                text-shadow: 0 0 5px lime;
+                input {
+                    flex: 1;
+                    height: 1em;
+                    line-height: 1em;
+                    font-size: 1em;
+                    width: 100%;
+                    padding-left: 13px;
+                    outline: none;
+                    border: none;
+                    background-color: black;
+                    font-family: 'Share Tech Mono', monospace;
+                    color: lime;
+                    text-shadow: 0 0 5px lime;
+                }
             }
         }
     }

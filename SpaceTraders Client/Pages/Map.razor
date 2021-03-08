@@ -1,0 +1,59 @@
+﻿@using System.Text.Json
+@page "/"
+@page "/map"
+@page "/map/{SystemSymbol}"
+@inject HttpClient Http
+@inject JsonSerializerOptions SerializerOptions
+@inject NavigationManager NavManager
+
+<div class="layout-container">
+    @if (scanning)
+    {
+        <h3 class="body-title">Scanning...</h3>
+    }
+    else
+    {
+        if (locations == null)
+        {
+            <h3 class="body-title">Scan failed. (Does the system exist?)</h3>
+        }
+        else
+        {
+            <div>TODO: Map.</div>
+        }
+    }
+</div>
+
+@code
+{
+    [Parameter]
+    public string SystemSymbol { get; set; }
+    private bool scanning = true;
+    private Location[] locations = null;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (!NavManager.ToBaseRelativePath(NavManager.Uri).StartsWith("map"))
+            NavManager.NavigateTo(NavManager.BaseUri + "map");
+
+        await UpdateLocationData();
+        base.OnParametersSet();
+    }
+
+    private async Task UpdateLocationData()
+    {
+        scanning = true;
+        locations = null;
+
+        var symbol = SystemSymbol ?? "OE";
+
+        try
+        {
+            var locationInfo = await Http.GetFromJsonAsync<SystemResponse>("/game/systems/" + symbol.ToUpper() + "/locations", SerializerOptions);
+            locations = locationInfo?.Locations;
+        }
+        catch (Exception) { }
+
+        scanning = false;
+    }
+}

@@ -15,21 +15,27 @@
     }
     else
     {
-        <div class="console">
-            <div class="output">
-                <p class="console-text" id="console">@Console.Output</p>
-            </div>
-            <div class="command-input">
-                <span>&gt;</span><input type="text" name="command-input" id="command-input" @bind="commandInput" @bind:event="oninput" @onkeydown="ReadCommand" />
-            </div>
-        </div>
-        <div class="body">
+        <div class="info">
             @if (UserInfo.UserDetails != null)
             {
                 <div class="info-bar">
                     <span class="left">User: @UserInfo.UserDetails.Username</span>
                     <span class="right">Credits: @UserInfo.UserDetails.Credits</span>
                 </div>
+                <div class="ships"><SpaceTraders_Client.Pages.Ships></SpaceTraders_Client.Pages.Ships></div>
+            }
+            <div class="console">
+                <div class="output">
+                    <p class="console-text" id="console">@Console.Output</p>
+                </div>
+                <div class="command-input">
+                    <span>&gt;</span><input type="text" name="command-input" id="command-input" @bind="commandInput" @bind:event="oninput" @onkeydown="ReadCommand" />
+                </div>
+            </div>
+        </div>
+        <div class="body">
+            @if (UserInfo.UserDetails != null)
+            {
                 <div class="content">
                     @Body
                 </div>

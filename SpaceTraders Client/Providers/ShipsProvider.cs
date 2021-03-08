@@ -159,16 +159,10 @@ namespace SpaceTraders_Client.Providers
             {
                 _console.WriteLine("SHIP: Provides functions for managing ships.");
                 _console.WriteLine("Subcommands");
-                _console.WriteLine("list: Shows all ships in your fleet - SHIP list");
                 _console.WriteLine("cargo: Displays the cargo of ship - SHIP cargo <Ship Id>");
                 _console.WriteLine("fly: Enacts a flightplan for a ship - SHIP fly <Ship Id> <Location Symbol>");
                 _console.WriteLine("rename: Renames a ship - SHIP rename <Ship Id> <New Name>");
                 _console.WriteLine("info: Prints the specifications of ship - SHIP info <Ship Id>");
-            }
-            else if(args[0].ToLower() == "list")
-            {
-                _console.WriteLine("Displaying ship list.");
-                _navManager.NavigateTo(_navManager.BaseUri + "ships");
             }
             else if(args[0].ToLower() == "cargo")
             {
@@ -213,7 +207,6 @@ namespace SpaceTraders_Client.Providers
 
                                 _stateEvents.TriggerUpdate(this, "flightStarted");
                                 _console.WriteLine("Flight started successfully. Destination: " + args[2].ToUpper() + ".");
-                                _navManager.NavigateTo(_navManager.BaseUri + "ships");
                             }
                             else
                             {
@@ -315,10 +308,11 @@ namespace SpaceTraders_Client.Providers
                 if (ships != null)
                 {
                     var shipsToAdd = ships.Where(t => !_shipData.ContainsKey(t.Id)).ToArray();
+                    var currentShips = _shipData.Count;
                     for (var x = 0; x < shipsToAdd.Length; x++)
                         _shipData.Add(shipsToAdd[x].Id, new ShipData
                         {
-                            Id = x + 1 + _shipData.Count,
+                            Id = x + 1 + currentShips,
                             DisplayName = shipsToAdd[x].Id,
                             ServerId = shipsToAdd[x].Id,
                         });
