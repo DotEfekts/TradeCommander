@@ -34,5 +34,17 @@
   {
     "outputFile": "Pages/Map.razor.css",
     "inputFile": "Pages/Map.razor.scss"
+  },
+  {
+    "outputFile": "Pages/Routes.razor.css",
+    "inputFile": "Pages/Routes.razor.scss"
+  },
+  {
+    "outputFile": "Pages/RouteCommands.razor.css",
+    "inputFile": "Pages/RouteCommands.razor.scss"
+  },
+  {
+    "outputFile": "Pages/RouteShips.razor.css",
+    "inputFile": "Pages/RouteShips.razor.scss"
   }
 ]

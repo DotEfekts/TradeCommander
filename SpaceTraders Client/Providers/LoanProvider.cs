@@ -42,63 +42,46 @@ namespace SpaceTraders_Client.Providers
             commandHandler.RegisterAsyncCommand("LOAN", HandleLoanCommandAsync);
         }
 
-        private async Task HandleLoanCommandAsync(string[] args) 
+        private async Task<CommandResult> HandleLoanCommandAsync(string[] args) 
         {
             if(_userInfo.UserDetails == null)
             {
                 _console.WriteLine("You must be logged in to use this command.");
-                return;
+                return CommandResult.FAILURE;
             }
             
-            if(args.Length == 0)
+            if(args.Length > 0)
             {
-                _console.WriteLine("Invalid arguments. (See LOAN help)");
-            }
-            else if(args[0] == "?" || args[0].ToLower() == "help")
-            {
-                _console.WriteLine("LOAN: Provides functions for managing loans.");
-                _console.WriteLine("Subcommands");
-                _console.WriteLine("list: Shows all loans available to take - LOAN list");
-                _console.WriteLine("owed: Shows all currently owing loans - LOAN owed");
-                _console.WriteLine("paid: Shows all paid loans - LOAN paid");
-                _console.WriteLine("take: Take a new loan - LOAN take <Loan Type>");
-                _console.WriteLine("pay: Pay a loan - LOAN pay <Loan Id>");
-            }
-            else if(args[0].ToLower() == "list")
-            {
-                if(args.Length != 1)
-                    _console.WriteLine("Invalid arguments. (See LOAN help)");
-                else
+                if(args[0] == "?" || args[0].ToLower() == "help")
+                {
+                    _console.WriteLine("LOAN: Provides functions for managing loans.");
+                    _console.WriteLine("Subcommands");
+                    _console.WriteLine("list: Shows all loans available to take - LOAN list");
+                    _console.WriteLine("owed: Shows all currently owing loans - LOAN owed");
+                    _console.WriteLine("paid: Shows all paid loans - LOAN paid");
+                    _console.WriteLine("take: Take a new loan - LOAN take <Loan Type>");
+                    _console.WriteLine("pay: Pay a loan - LOAN pay <Loan Id>");
+                    return CommandResult.SUCCESS;
+                }
+                else if(args[0].ToLower() == "list" && args.Length == 1)
                 {
                     _console.WriteLine("Displaying loans available.");
                     _navManager.NavigateTo(_navManager.BaseUri + "loans");
+                    return CommandResult.SUCCESS;
                 }
-            }
-            else if(args[0].ToLower() == "owed")
-            {
-                if (args.Length != 1)
-                    _console.WriteLine("Invalid arguments. (See LOAN help)");
-                else
+                else if(args[0].ToLower() == "owed" && args.Length == 1)
                 {
                     _console.WriteLine("Displaying loans owed.");
                     _navManager.NavigateTo(_navManager.BaseUri + "loans/owed");
+                    return CommandResult.SUCCESS;
                 }
-            }
-            else if (args[0].ToLower() == "paid")
-            {
-                if (args.Length != 1)
-                    _console.WriteLine("Invalid arguments. (See LOAN help)");
-                else
+                else if (args[0].ToLower() == "paid" && args.Length == 1)
                 {
                     _console.WriteLine("Displaying loans paid.");
                     _navManager.NavigateTo(_navManager.BaseUri + "loans/paid");
+                    return CommandResult.SUCCESS;
                 }
-            }
-            else if (args[0].ToLower() == "take")
-            {
-                if (args.Length != 2)
-                    _console.WriteLine("Invalid arguments. (See LOAN help)");
-                else
+                else if (args[0].ToLower() == "take" && args.Length == 2)
                 {
                     using var httpResult = await _http.PostAsJsonAsync("/users/" + _userInfo.Username + "/loans", new LoanRequest
                     {
@@ -113,6 +96,8 @@ namespace SpaceTraders_Client.Providers
                         _userInfo.UserDetails.Credits = details.User.Credits;
                         _console.WriteLine("Loan taken successfully. Loan amount: " + credits + " credits.");
                         _stateEvents.TriggerUpdate(this, "loanTaken");
+
+                        return CommandResult.SUCCESS;
                     }
                     else
                     {
@@ -120,13 +105,10 @@ namespace SpaceTraders_Client.Providers
                         //var error = await httpResult.Content.ReadFromJsonAsync<ErrorResponse>(_serializerOptions);
                         _console.WriteLine("An error occurred while attempting to take the loan.");
                     }
+
+                    return CommandResult.FAILURE;
                 }
-            }
-            else if (args[0].ToLower() == "pay")
-            {
-                if (args.Length != 2)
-                    _console.WriteLine("Invalid arguments. (See LOAN help)");
-                else
+                else if (args[0].ToLower() == "pay" && args.Length == 2)
                 {
                     using var httpResult = await _http.PutAsJsonAsync("/users/" + _userInfo.Username + "/loans/" + args[1], new { });
 
@@ -138,18 +120,20 @@ namespace SpaceTraders_Client.Providers
                         _userInfo.UserDetails.Credits = details.User.Credits;
                         _console.WriteLine("Loan paid successfully. Payment amount: " + payment + " credits.");
                         _stateEvents.TriggerUpdate(this, "loanPaid");
+
+                        return CommandResult.SUCCESS;
                     }
                     else
                     {
                         var error = await httpResult.Content.ReadFromJsonAsync<ErrorResponse>(_serializerOptions);
                         _console.WriteLine(error.Error.Message);
                     }
+
+                    return CommandResult.FAILURE;
                 }
             }
-            else
-            {
-                _console.WriteLine("Invalid arguments. (See SHIPYARD help)");
-            }
+
+            return CommandResult.INVALID;
         }
     }
 }

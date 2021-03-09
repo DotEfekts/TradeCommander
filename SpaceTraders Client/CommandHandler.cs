@@ -8,17 +8,17 @@ namespace SpaceTraders_Client
     public class CommandHandler
     {
         private readonly ConsoleOutput _console;
-        private readonly Dictionary<string, Action<string[]>> _handlers;
-        private readonly Dictionary<string, Func<string[], Task>> _asyncHandlers;
+        private readonly Dictionary<string, Func<string[], CommandResult>> _handlers;
+        private readonly Dictionary<string, Func<string[], Task<CommandResult>>> _asyncHandlers;
 
         public CommandHandler(ConsoleOutput console)
         {
             _console = console;
-            _handlers = new Dictionary<string, Action<string[]>>();
-            _asyncHandlers = new Dictionary<string, Func<string[], Task>>();
+            _handlers = new Dictionary<string, Func<string[], CommandResult>>();
+            _asyncHandlers = new Dictionary<string, Func<string[], Task<CommandResult>>>();
         }
 
-        public bool RegisterCommand(string commandName, Action<string[]> handler)
+        public bool RegisterCommand(string commandName, Func<string[], CommandResult> handler)
         {
             if (_handlers.ContainsKey(commandName.ToUpper()) || _asyncHandlers.ContainsKey(commandName.ToUpper()))
                 return false;
@@ -27,7 +27,7 @@ namespace SpaceTraders_Client
             return true;
         }
 
-        public bool RegisterAsyncCommand(string commandName, Func<string[], Task> handler)
+        public bool RegisterAsyncCommand(string commandName, Func<string[], Task<CommandResult>> handler)
         {
             if (_handlers.ContainsKey(commandName.ToUpper()) || _asyncHandlers.ContainsKey(commandName.ToUpper()))
                 return false;
@@ -36,10 +36,10 @@ namespace SpaceTraders_Client
             return true;
         }
 
-        public async Task HandleCommand(string command)
+        public async Task<CommandResult> HandleCommand(string command)
         {
             if (string.IsNullOrWhiteSpace(command))
-                return;
+                return CommandResult.SUCCESS;
 
             var args = command.Split(' ')
                 .Where(t => !string.IsNullOrWhiteSpace(t)).Select(t => t.Trim()).ToArray();
@@ -47,14 +47,25 @@ namespace SpaceTraders_Client
             var newArgs = new string[args.Length - 1];
             Array.Copy(args, 1, newArgs, 0, args.Length - 1);
 
+            CommandResult result;
             if (_handlers.ContainsKey(commandName))
-                _handlers[commandName].Invoke(newArgs);
+                result = _handlers[commandName].Invoke(newArgs);
             else if(_asyncHandlers.ContainsKey(commandName.ToUpper()))
-                await _asyncHandlers[commandName].Invoke(newArgs);
+                result = await _asyncHandlers[commandName].Invoke(newArgs);
             else
             {
                 _console.WriteLine("Unknown command: " + commandName);
+                return CommandResult.INVALID;
             }
+
+            if(result == CommandResult.INVALID)
+                _console.WriteLine("Invalid arguments. (See " + command.ToUpper() + " help)");
+            return result;
         }
+    }
+
+    public enum CommandResult
+    {
+        SUCCESS, FAILURE, INVALID
     }
 }

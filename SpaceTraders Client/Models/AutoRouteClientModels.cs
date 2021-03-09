@@ -11,15 +11,20 @@ namespace SpaceTraders_Client.Models
         public int Id { get; set; }
         public string DisplayName { get; set; }
         public RouteCommand[] Commands { get; set; }
-        public string[] ShipsIds { get; set; }
-        [JsonIgnore]
-        public Ship[] Ships { get; set; }
+        public RouteShip[] Ships { get; set; }
     }
 
     public class RouteCommand
     {
         public int Index { get; set; }
         public string Command { get; set; }
-        public string Location { get; set; }
+    }
+
+    public class RouteShip
+    {
+        public int LastCommand { get; set; }
+        public string ShipId { get; set; }
+        [JsonIgnore]
+        public ShipData Ship { get; set; }
     }
 }

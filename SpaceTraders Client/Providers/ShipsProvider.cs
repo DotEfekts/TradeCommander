@@ -73,7 +73,7 @@ namespace SpaceTraders_Client.Providers
 
         public ShipData GetShipData(string id)
         {
-            if (_shipData.ContainsKey(id))
+            if (_shipData != null && _shipData.ContainsKey(id))
                 return new ShipData
                 {
                     Id = _shipData[id].Id,
@@ -161,48 +161,40 @@ namespace SpaceTraders_Client.Providers
             }
         }
 
-        private async Task HandleShipCommandAsync(string[] args) 
+        private async Task<CommandResult> HandleShipCommandAsync(string[] args) 
         {
             if(_userInfo.UserDetails == null)
             {
                 _console.WriteLine("You must be logged in to use this command.");
-                return;
+                return CommandResult.FAILURE;
             }
             
-            if(args.Length == 0)
+            if(args.Length > 1)
             {
-                _console.WriteLine("Invalid arguments. (See SHIP help)");
-            }
-            else if(args[0] == "?" || args[0].ToLower() == "help")
-            {
-                _console.WriteLine("SHIP: Provides functions for managing ships.");
-                _console.WriteLine("Subcommands");
-                _console.WriteLine("cargo: Displays the cargo of ship - SHIP cargo <Ship Id>");
-                _console.WriteLine("fly: Enacts a flightplan for a ship - SHIP fly <Ship Id> <Location Symbol>");
-                _console.WriteLine("rename: Renames a ship - SHIP rename <Ship Id> <New Name>");
-                _console.WriteLine("info: Prints the specifications of ship - SHIP info <Ship Id>");
-            }
-            else if(args[0].ToLower() == "cargo")
-            {
-                if (args.Length != 2)
-                    _console.WriteLine("Invalid arguments. (See SHIP help)");
-                else
+                if(args[0] == "?" || args[0].ToLower() == "help")
+                {
+                    _console.WriteLine("SHIP: Provides functions for managing ships.");
+                    _console.WriteLine("Subcommands");
+                    _console.WriteLine("cargo: Displays the cargo of ship - SHIP cargo <Ship Id>");
+                    _console.WriteLine("fly: Enacts a flightplan for a ship - SHIP fly <Ship Id> <Location Symbol>");
+                    _console.WriteLine("rename: Renames a ship - SHIP rename <Ship Id> <New Name>");
+                    _console.WriteLine("info: Prints the specifications of ship - SHIP info <Ship Id>");
+                    return CommandResult.SUCCESS;
+                }
+                else if(args[0].ToLower() == "cargo" && args.Length == 2)
                 {
                     var shipData = GetReferencedShipData(args[1]);
                     if (shipData != null)
                     {
                         _console.WriteLine("Displaying cargo for " + shipData.DisplayName + ".");
                         _navManager.NavigateTo(_navManager.BaseUri + "ships/cargo/" + shipData.ServerId);
+                        return CommandResult.SUCCESS;
                     }
                     else
                         _console.WriteLine("Invalid ship id. Please use number ids and not the full string id.");
+                    return CommandResult.FAILURE;
                 }
-            }
-            else if (args[0].ToLower() == "fly")
-            {
-                if (args.Length != 3)
-                    _console.WriteLine("Invalid arguments. (See SHIP help)");
-                else
+                else if (args[0].ToLower() == "fly" && args.Length == 3)
                 {
                     var shipData = GetReferencedShipData(args[1]);
                     if (shipData != null)
@@ -243,7 +235,9 @@ namespace SpaceTraders_Client.Providers
 
                                 _stateEvents.TriggerUpdate(this, "flightStarted");
                                 _console.WriteLine("Flight started successfully. Destination: " + args[2].ToUpper() + ".");
-                                _navManager.NavigateTo(_navManager.BaseUri + "map/" + args[2].ToUpper().Split("-")[0]);
+                                _navManager.NavigateTo(_navManager.BaseUri + "map/" + shipData.ServerId);
+
+                                return CommandResult.SUCCESS;
                             }
                             else
                             {
@@ -259,13 +253,10 @@ namespace SpaceTraders_Client.Providers
                     }
                     else
                         _console.WriteLine("Invalid ship id. Please use number ids and not the full string id.");
+
+                    return CommandResult.FAILURE;
                 }
-            }
-            else if (args[0].ToLower() == "rename")
-            {
-                if (args.Length != 3)
-                    _console.WriteLine("Invalid arguments. (See SHIP help)");
-                else
+                else if (args[0].ToLower() == "rename" && args.Length == 3)
                 {
                     var shipData = GetReferencedShipData(args[1]);
                     if (shipData != null)
@@ -275,21 +266,19 @@ namespace SpaceTraders_Client.Providers
 
                         _console.WriteLine("Ship " + args[1] + " renamed to " + args[2] + ".");
                         _stateEvents.TriggerUpdate(this, "shipRenamed");
+                        return CommandResult.SUCCESS;
                     }
                     else
                         _console.WriteLine("Invalid ship id. Please use number ids and not the full string id.");
+                    return CommandResult.FAILURE;
                 }
-            }
-            else if (args[0].ToLower() == "info")
-            {
-                if (args.Length != 2)
-                    _console.WriteLine("Invalid arguments. (See SHIP help)");
-                else
+                else if (args[0].ToLower() == "info" && args.Length == 2)
                 {
                     var shipData = GetReferencedShipData(args[1]);
                     if (shipData != null)
                     {
                         _console.WriteLine("Displaying info for " + shipData.DisplayName + ".");
+                        await _console.WriteLine("Server Id: " + shipData.ServerId, 500);
                         await _console.WriteLine("Type: " + shipData.Ship.Type, 500);
                         await _console.WriteLine("Class: " + shipData.Ship.Class, 100);
                         await _console.WriteLine("Manufacturer: " + shipData.Ship.Manufacturer, 100);
@@ -297,15 +286,16 @@ namespace SpaceTraders_Client.Providers
                         await _console.WriteLine("Speed: " + shipData.Ship.Speed, 100);
                         await _console.WriteLine("Plating: " + shipData.Ship.Plating, 100);
                         await _console.WriteLine("Weapons: " + shipData.Ship.Weapons, 100);
+
+                        return CommandResult.SUCCESS;
                     }
                     else
-                        _console.WriteLine("Invalid ship id. Please use number ids and not the full string id.");
+                            _console.WriteLine("Invalid ship id. Please use number ids and not the full string id.");
+                    return CommandResult.FAILURE;
                 }
             }
-            else
-            {
-                _console.WriteLine("Invalid arguments. (See SHIP help)");
-            }
+
+            return CommandResult.INVALID;
         }
 
         private async Task RefreshShipData()
@@ -353,8 +343,7 @@ namespace SpaceTraders_Client.Providers
                 foreach(var ship in _shipData)
                 {
                     ship.Value.Ship = ships.First(t => t.Id == ship.Key);
-                    var data = ship.Value;
-                    ship.Value.FlightEnded = ship.Value.Ship.Location != null;
+                    ship.Value.FlightEnded = ship.Value.Ship.Location != null || ship.Value.LastFlightPlan?.TimeRemainingInSeconds < 0;
                 }
 
                 SaveShipData();

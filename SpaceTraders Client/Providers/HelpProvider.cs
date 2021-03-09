@@ -21,12 +21,12 @@ namespace SpaceTraders_Client.Providers
             commandHandler.RegisterAsyncCommand("HELP", HandleHelpAsync);
         }
 
-        private async Task HandleHelpAsync(string[] args)
+        private async Task<CommandResult> HandleHelpAsync(string[] args)
         {
             if (_userInfo.UserDetails == null)
             {
                 _console.WriteLine("You must be logged in to use this command.");
-                return;
+                return CommandResult.FAILURE;
             }
 
             if (args.Length == 0)
@@ -38,25 +38,25 @@ namespace SpaceTraders_Client.Providers
                 _console.WriteLine("SHIPYARD: Provides functions for managing ships.");
                 _console.WriteLine("LOAN: Provides functions for managing loans.");
                 _console.WriteLine("CLEAR: Clears the screen.");
-
+                return CommandResult.SUCCESS;
             }
             else if (args[0] == "?" || args[0].ToLower() == "help")
             {
                 _console.WriteLine("HELP: Provides a list of commands.");
                 _console.WriteLine("HELP <Command Name>: Provides a help for a specific command.");
+                return CommandResult.SUCCESS;
             }
             else if (args[0].ToLower() == "clear")
             {
                 _console.WriteLine("CLEAR: Clears the screen.");
+                return CommandResult.SUCCESS;
             }
             else if (args.Length == 1)
             {
-                await _commandHandler.HandleCommand(args[0] + " help");
+                return await _commandHandler.HandleCommand(args[0] + " help");
             }
-            else
-            {
-                _console.WriteLine("Invalid arguments. (See HELP help)");
-            }
+
+            return CommandResult.INVALID;
         }
     }
 }

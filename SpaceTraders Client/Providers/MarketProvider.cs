@@ -69,31 +69,26 @@ namespace SpaceTraders_Client.Providers
             _marketData ??= new Dictionary<string, Market>();
         }
 
-        private async Task HandleMarketCommandAsync(string[] args)
+        private async Task<CommandResult> HandleMarketCommandAsync(string[] args)
         {
             if (_userInfo.UserDetails == null)
             {
                 _console.WriteLine("You must be logged in to use this command.");
-                return;
+                return CommandResult.FAILURE;
             }
 
-            if (args.Length == 0)
+            if (args.Length > 1)
             {
-                _console.WriteLine("Invalid arguments. (See MARKET help)");
-            }
-            else if (args[0] == "?" || args[0].ToLower() == "help")
-            {
-                _console.WriteLine("MARKET: Provides functions for interacting with the marketplace.");
-                _console.WriteLine("Subcommands");
-                _console.WriteLine("list: Displays the market data for a given location - MARKET list <Location Symbol/Ship Id>");
-                _console.WriteLine("buy: Purchase cargo from a market for the given ship - MARKET buy <Ship Id> <Good> <Quantity>");
-                _console.WriteLine("sell: Sell cargo to a market from the given ship - MARKET sell <Ship Id> <Good> <Quantity>");
-            }
-            else if (args[0].ToLower() == "list")
-            {
-                if (args.Length != 2)
-                    _console.WriteLine("Invalid arguments. (See MARKET help)");
-                else
+                if (args[0] == "?" || args[0].ToLower() == "help")
+                {
+                    _console.WriteLine("MARKET: Provides functions for interacting with the marketplace.");
+                    _console.WriteLine("Subcommands");
+                    _console.WriteLine("list: Displays the market data for a given location - MARKET list <Location Symbol/Ship Id>");
+                    _console.WriteLine("buy: Purchase cargo from a market for the given ship - MARKET buy <Ship Id> <Good> <Quantity>");
+                    _console.WriteLine("sell: Sell cargo to a market from the given ship - MARKET sell <Ship Id> <Good> <Quantity>");
+                    return CommandResult.SUCCESS;
+                }
+                else if (args[0].ToLower() == "list" && args.Length == 2)
                 {
                     var symbol = args[1].ToUpper();
 
@@ -103,7 +98,7 @@ namespace SpaceTraders_Client.Providers
                         if (string.IsNullOrWhiteSpace(shipData.Ship.Location))
                         {
                             _console.WriteLine("Ship is not currently docked.");
-                            return;
+                            return CommandResult.FAILURE;
                         }
 
                         symbol = shipData.Ship.Location;
@@ -123,26 +118,22 @@ namespace SpaceTraders_Client.Providers
                     {
                         _console.WriteLine("Displaying market data for " + symbol + ".");
                         _navManager.NavigateTo(_navManager.BaseUri + "markets/" + symbol);
+                        return CommandResult.SUCCESS;
                     }
                     else
                         _console.WriteLine("Market data unavailable for " + symbol + ".");
-                }
-            }
-            else if (args[0].ToLower() == "buy")
-            {
 
-                if (args.Length != 4)
-                    _console.WriteLine("Invalid arguments. (See MARKET help)");
-                else
+                    return CommandResult.FAILURE;
+                }
+                else if (args[0].ToLower() == "buy" && args.Length == 4)
                 {
                     var shipData = _shipInfo.GetShipDataByLocalId(args[1]);
                     if (shipData != null)
                     {
                         if (!string.IsNullOrWhiteSpace(shipData.Ship.Location))
                         {
-                            var quantity = 0;
-                            var buyMax = args[3].ToLower() == "max";
-                            if (buyMax || (int.TryParse(args[3], out quantity) && quantity > 0))
+                            var quantityType = GetQuantityType(args[3], out int quantity);
+                            if (quantityType != QuantityType.INVALID)
                             {
                                 var response = await RefreshMarketData(shipData.Ship.Location);
                                 _stateEvents.TriggerUpdate(this, "marketUpdated");
@@ -158,19 +149,37 @@ namespace SpaceTraders_Client.Providers
                                         if(good.QuantityAvailable > 0)
                                         {
                                             var spaceLeft = shipData.Ship.MaxCargo - shipData.Ship.Cargo.Sum(t => t.TotalVolume);
-                                            var shipSpaceExceeded = buyMax || (quantity * good.VolumePerUnit) > spaceLeft;
-                                            if (shipSpaceExceeded)
+
+                                            if (quantityType == QuantityType.TO_AMOUNT)
+                                            {
+                                                quantity -= shipData.Ship.Cargo.Where(t => t.Good == good.Symbol).Sum(t => t.Quantity);
+                                                if (quantity < 1)
+                                                {
+                                                    _console.WriteLine("Cargo already at or over given buy limit.");
+                                                    return CommandResult.SUCCESS;
+                                                }
+                                            }
+                                            else if(quantityType == QuantityType.PERCENT)
+                                                quantity = (int)(shipData.Ship.MaxCargo * (quantity / 100d)) / good.VolumePerUnit;
+                                            else if(quantityType == QuantityType.MAX)
+                                                quantity = good.QuantityAvailable;
+
+                                            var shipSpaceExceeded = quantity * good.VolumePerUnit > spaceLeft;
+                                            if (shipSpaceExceeded && good.VolumePerUnit > 0)
                                                 quantity = spaceLeft / good.VolumePerUnit;
 
                                             var quantityAdjusted = quantity > good.QuantityAvailable;
                                             if (quantityAdjusted)
                                                 quantity = good.QuantityAvailable;
+                                            
+                                            if (quantityType == QuantityType.MAX && quantity * good.PricePerUnit > _userInfo.UserDetails.Credits)
+                                                quantity = _userInfo.UserDetails.Credits / good.PricePerUnit;
 
                                             if (quantity > 0)
                                             {
                                                 if (quantity * good.PricePerUnit <= _userInfo.UserDetails.Credits)
                                                 {
-                                                    if(buyMax)
+                                                    if(quantityType == QuantityType.MAX)
                                                         _console.WriteLine("Purchasing maximum. Purchase quantity: " + quantity + ".");
                                                     else if (quantityAdjusted)
                                                         _console.WriteLine("Insufficient quantity available for purchase. Purchasing maximum.");
@@ -194,6 +203,8 @@ namespace SpaceTraders_Client.Providers
                                                         _stateEvents.TriggerUpdate(this, "cargoPurchased");
                                                         _navManager.NavigateTo(_navManager.BaseUri + "ships/cargo/" + shipData.ServerId);
                                                         _console.WriteLine(quantity + " units of cargo purchased successfully. Total cost: " + purchaseResult.Order.Sum(t => t.Total) + " credits.");
+                                                    
+                                                        return CommandResult.SUCCESS;
                                                     }
                                                     else
                                                     {
@@ -224,34 +235,41 @@ namespace SpaceTraders_Client.Providers
                     }
                     else
                         _console.WriteLine("Invalid ship id. Please use number ids and not the full string id.");
-                }
-            }
-            else if (args[0].ToLower() == "sell")
-            {
 
-                if (args.Length != 4)
-                    _console.WriteLine("Invalid arguments. (See MARKET help)");
-                else
+                    return CommandResult.FAILURE;
+                }
+                else if (args[0].ToLower() == "sell" && args.Length == 4)
                 {
                     var shipData = _shipInfo.GetShipDataByLocalId(args[1]);
                     if (shipData != null)
                     {
                         if (!string.IsNullOrWhiteSpace(shipData.Ship.Location))
                         {
-                            var quantity = 0;
-                            var sellMax = args[3].ToLower() == "max";
-                            if (sellMax || (int.TryParse(args[3], out quantity) && quantity > 0))
+                            var quantityType = GetQuantityType(args[3], out int quantity);
+                            if (quantityType != QuantityType.INVALID)
                             {
                                 var good = shipData.Ship.Cargo.FirstOrDefault(t => t.Good == args[2].ToUpper());
 
                                 if(good != null)
                                 {
-                                    var quantityExceeded = sellMax || quantity > good.Quantity;
+                                    if (quantityType == QuantityType.TO_AMOUNT)
+                                    {
+                                        quantity = good.Quantity - quantity;
+                                        if (quantity < 1)
+                                        {
+                                            _console.WriteLine("Cargo already at or over given sell limit.");
+                                            return CommandResult.SUCCESS;
+                                        }
+                                    }
+                                    else if (quantityType == QuantityType.PERCENT)
+                                        quantity = (int)(good.Quantity * (quantity / 100d));
+
+                                    var quantityExceeded = quantityType == QuantityType.MAX || quantity > good.Quantity;
                                     if (quantityExceeded)
                                         quantity = good.Quantity;
-                                    if(!sellMax && quantityExceeded)
+                                    if(quantityType != QuantityType.MAX && quantityExceeded)
                                         _console.WriteLine("Insufficient quantity available for sale. Selling maximum.");
-                                    else if (sellMax)
+                                    else if (quantityType == QuantityType.MAX)
                                         _console.WriteLine("Selling maximum. Sell quantity: " + quantity + ".");
 
                                     var httpResult = await _http.PostAsJsonAsync("/users/" + _userInfo.Username + "/sell-orders", new TransactionRequest
@@ -270,6 +288,8 @@ namespace SpaceTraders_Client.Providers
                                         _stateEvents.TriggerUpdate(this, "cargoSold");
                                         _navManager.NavigateTo(_navManager.BaseUri + "ships/cargo/" + shipData.ServerId);
                                         _console.WriteLine(quantity + " units of cargo sold successfully. Total made: " + saleResult.Order.Sum(t => t.Total) + " credits.");
+
+                                        return CommandResult.SUCCESS;
                                     }
                                     else
                                     {
@@ -288,12 +308,12 @@ namespace SpaceTraders_Client.Providers
                     }
                     else
                         _console.WriteLine("Invalid ship id. Please use number ids and not the full string id.");
+
+                    return CommandResult.FAILURE;
                 }
             }
-            else
-            {
-                _console.WriteLine("Invalid arguments. (See MARKET help)");
-            }
+            
+            return CommandResult.INVALID;
         }
 
         private async Task RefreshMarketData()
@@ -328,6 +348,39 @@ namespace SpaceTraders_Client.Providers
         private void SaveMarketData()
         {
             _localStorage.SetItem("MarketData", _marketData);
+        }
+
+        private static QuantityType GetQuantityType(string quantityString, out int quantity)
+        {
+            quantityString = quantityString.ToLower();
+
+            var quantityType = QuantityType.FLAT;
+            if (quantityString == "max")
+                quantityType = QuantityType.MAX;
+            else if (quantityString.StartsWith("m"))
+            {
+                quantityType = QuantityType.TO_AMOUNT;
+                quantityString = quantityString.Remove(0, 1);
+            }
+            else if (quantityString.EndsWith("%"))
+            {
+                quantityType = QuantityType.PERCENT;
+                quantityString = quantityString.Remove(quantityString.Length -1);
+            }
+
+            quantity = 0;
+            if (quantityType != QuantityType.MAX)
+                if (!int.TryParse(quantityString, out quantity))
+                    quantityType = QuantityType.INVALID;
+                else if(quantity < 1)
+                    quantityType = QuantityType.INVALID;
+
+            return quantityType;
+        }
+
+        private enum QuantityType 
+        {
+            FLAT, MAX, TO_AMOUNT, PERCENT, INVALID
         }
     }
 }

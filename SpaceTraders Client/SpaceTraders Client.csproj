@@ -23,4 +23,13 @@
     <PackageReference Include="System.Net.Http.Json" Version="5.0.0" />
   </ItemGroup>
 
+  <ItemGroup>
+    <None Update="Pages\Routes - Copy - Copy.razor.scss">
+      <DependentUpon>Routes - Copy.razor.scss</DependentUpon>
+    </None>
+    <None Update="Pages\Routes - Copy.razor.scss">
+      <DependentUpon>Routes.razor.scss</DependentUpon>
+    </None>
+  </ItemGroup>
+
 </Project>

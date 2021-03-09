@@ -37,7 +37,7 @@
                         <td>@shipData.Id</td>
                         <td>@shipData.DisplayName</td>
                         <td>@shipData.Ship.Type</td>
-                        <td>@shipData.Ship.Cargo.Sum(t => t.TotalVolume)/@shipData.Ship.MaxCargo</td>
+                        <td>@shipData.Ship.Cargo.Sum(t => t.TotalVolume)/@shipData.Ship.MaxCargo@(shipData.Ship.Cargo.Any(t => t.Quantity > 0 && t.TotalVolume == 0) ? " +" + shipData.Ship.Cargo.Where(t => t.TotalVolume == 0).Sum(t => t.Quantity) : "")</td>
                         <td>@shipData.Ship.Speed</td>
                         <td>@(shipData.Ship.Cargo.FirstOrDefault(t => t.Good == "FUEL")?.Quantity ?? 0)</td>
                         <td>@GetShipStatus(shipData.Ship)</td>

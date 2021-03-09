@@ -47,7 +47,7 @@ namespace SpaceTraders_Client
                 StartingDetailsChecked = true;
 
             commandHandler.RegisterAsyncCommand("LOGIN", HandleLoginAsync);
-            commandHandler.RegisterAsyncCommand("SIGNUP", HandleSignupAsync);
+            commandHandler.RegisterAsyncCommand("SIGNUP",   HandleSignupAsync);
             commandHandler.RegisterCommand("LOGOUT", HandleLogout);
         }
 
@@ -86,17 +86,16 @@ namespace SpaceTraders_Client
                 await ValidateDetailsAsync(initialDetails);
         }
 
-        private async Task HandleLoginAsync(string[] args)
+        private async Task<CommandResult> HandleLoginAsync(string[] args)
         {
             if (args.Length == 1 && (args[0] == "?" || args[0].ToLower() == "help"))
             {
                 _console.WriteLine("LOGIN: Logs an existing user into the SpaceTraders API.");
                 _console.WriteLine("Usage: LOGIN <Username> <Token>");
+                return CommandResult.SUCCESS;
             }
             else if(args.Length != 2)
-            {
-                _console.WriteLine("Invalid arguments. (See LOGIN help)");
-            }
+                return CommandResult.INVALID;
             else
             {
                 await SetDetailsAsync(args[0], args[1], false);
@@ -104,25 +103,25 @@ namespace SpaceTraders_Client
                 {
                     _console.Clear();
                     _console.WriteLine("Welcome back, " + UserDetails.Username + ".");
+                    return CommandResult.SUCCESS;
                 }
                 else
-                {
                     _console.WriteLine("Incorrect login details. Please try again.");
-                }
+
+                return CommandResult.FAILURE;
             }
         }
 
-        private void HandleLogout(string[] args)
+        private CommandResult HandleLogout(string[] args)
         {
             if (args.Length == 1 && (args[0] == "?" || args[0].ToLower() == "help"))
             {
                 _console.WriteLine("LOGOUT: Logs current user out of the SpaceTraders API.");
                 _console.WriteLine("Usage: LOGOUT");
+                return CommandResult.SUCCESS;
             }
             else if (args.Length > 0)
-            {
-                _console.WriteLine("Invalid arguments. (See LOGOUT help)");
-            }
+                return CommandResult.INVALID;
             else
             {
                 UserDetails = null;
@@ -134,20 +133,21 @@ namespace SpaceTraders_Client
                 _console.Clear();
                 _console.WriteLine("Goodbye.");
                 _uiEvents.TriggerUpdate(this, "userLogout");
+
+                return CommandResult.SUCCESS;
             }
         }
 
-        private async Task HandleSignupAsync(string[] args)
+        private async Task<CommandResult> HandleSignupAsync(string[] args)
         {
             if (args.Length == 1 && (args[0] == "?" || args[0].ToLower() == "help"))
             {
                 _console.WriteLine("SIGNUP: Creates an account for the SpaceTraders API.");
                 _console.WriteLine("Usage: SIGNUP <Username>");
+                return CommandResult.SUCCESS;
             }
             else if (args.Length != 1)
-            {
-                _console.WriteLine("Invalid arguments. (See SIGNUP help)");
-            }
+                return CommandResult.INVALID;
             else
             {
                 var httpResult = await _http.PostAsJsonAsync("/users/" + args[0] + "/token", new { });
@@ -164,6 +164,8 @@ namespace SpaceTraders_Client
 
                     if (UserDetails == null)
                         _console.WriteLine("An error occurred during login. Please copy your token and login manually.");
+                    else
+                        return CommandResult.SUCCESS;
                 }
                 else if (httpResult.StatusCode == HttpStatusCode.Conflict) 
                 {
@@ -174,6 +176,8 @@ namespace SpaceTraders_Client
                     var error = await httpResult.Content.ReadFromJsonAsync<ErrorResponse>(_serializerOptions);
                     _console.WriteLine(error.Error.Message);
                 }
+
+                return CommandResult.FAILURE;
             }
         }
     }

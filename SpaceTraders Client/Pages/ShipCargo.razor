@@ -18,7 +18,7 @@
     }
     else
     {
-        <h3 class="body-title">@shipData.DisplayName - Cargo (@shipData.Ship.Cargo.Sum(t => t.TotalVolume)/@shipData.Ship.MaxCargo)</h3>
+<h3 class="body-title">@shipData.DisplayName - Cargo (@shipData.Ship.Cargo.Sum(t => t.TotalVolume)/@shipData.Ship.MaxCargo@(shipData.Ship.Cargo.Any(t => t.Quantity > 0 && t.TotalVolume == 0) ? " +" + shipData.Ship.Cargo.Where(t => t.TotalVolume == 0).Sum(t => t.Quantity) : ""))</h3>
         if (shipData.Ship.Cargo == null || shipData.Ship.Cargo.Length == 0)
         {
             <p>This ship does not contain any cargo.</p>

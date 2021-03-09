@@ -42,46 +42,41 @@ namespace SpaceTraders_Client.Providers
             commandHandler.RegisterAsyncCommand("SHIPYARD", HandleShipyardCommandAsync);
         }
 
-        private async Task HandleShipyardCommandAsync(string[] args) 
+        private async Task<CommandResult> HandleShipyardCommandAsync(string[] args) 
         {
             if(_userInfo.UserDetails == null)
             {
                 _console.WriteLine("You must be logged in to use this command.");
-                return;
+                return CommandResult.FAILURE;
             }
             
-            if(args.Length == 0)
+            if(args.Length > 1)
             {
-                _console.WriteLine("Invalid arguments. (See SHIPYARD help)");
-            }
-            else if(args[0] == "?" || args[0].ToLower() == "help")
-            {
-                _console.WriteLine("SHIPYARD: Provides functions for managing ships.");
-                _console.WriteLine("Subcommands");
-                _console.WriteLine("list: Shows all ships available to purchase - SHIPYARD list");
-                _console.WriteLine("      Shows locations a ship is available to purchase - SHIPYARD list <Ship Type>");
-                _console.WriteLine("buy: Purchase a ship - SHIPYARD buy <Ship Type> <Location Symbol>");
-            }
-            else if(args[0].ToLower() == "list")
-            {
-                if(args.Length > 2)
-                    _console.WriteLine("Invalid arguments. (See SHIPYARD help)");
-                else if(args.Length == 1)
+                if(args[0] == "?" || args[0].ToLower() == "help")
                 {
-                    _console.WriteLine("Displaying ship list.");
-                    _navManager.NavigateTo(_navManager.BaseUri + "shipyard");
+                    _console.WriteLine("SHIPYARD: Provides functions for managing ships.");
+                    _console.WriteLine("Subcommands");
+                    _console.WriteLine("list: Shows all ships available to purchase - SHIPYARD list");
+                    _console.WriteLine("      Shows locations a ship is available to purchase - SHIPYARD list <Ship Type>");
+                    _console.WriteLine("buy: Purchase a ship - SHIPYARD buy <Ship Type> <Location Symbol>");
+                    return CommandResult.SUCCESS;
                 }
-                else
+                else if(args[0].ToLower() == "list" && (args.Length == 1 || args.Length == 2))
                 {
-                    _console.WriteLine("Displaying purchase location list.");
-                    _navManager.NavigateTo(_navManager.BaseUri + "shipyard/" + args[1].ToUpper());
+                    if(args.Length == 1)
+                    {
+                        _console.WriteLine("Displaying ship list.");
+                        _navManager.NavigateTo(_navManager.BaseUri + "shipyard");
+                    }
+                    else
+                    {
+                        _console.WriteLine("Displaying purchase location list.");
+                        _navManager.NavigateTo(_navManager.BaseUri + "shipyard/" + args[1].ToUpper());
+                    }
+
+                    return CommandResult.SUCCESS;
                 }
-            }
-            else if(args[0].ToLower() == "buy")
-            {
-                if (args.Length != 3)
-                    _console.WriteLine("Invalid arguments. (See SHIPYARD help)");
-                else
+                else if(args[0].ToLower() == "buy" && args.Length == 3)
                 {
                     using var httpResult = await _http.PostAsJsonAsync("/users/" + _userInfo.Username + "/ships", new ShipyardPurchaseRequest
                     {
@@ -97,6 +92,8 @@ namespace SpaceTraders_Client.Providers
                         _userInfo.UserDetails.Credits = details.User.Credits;
                         _console.WriteLine("Ship purchased successfully. Total cost: " + cost + " credits.");
                         _stateEvents.TriggerUpdate(this, "shipPurchased");
+
+                        return CommandResult.SUCCESS;
                     }
                     else
                     {
@@ -113,12 +110,11 @@ namespace SpaceTraders_Client.Providers
                             _console.WriteLine(error.Error.Message);
                     }
 
+                    return CommandResult.FAILURE;
                 }
             }
-            else
-            {
-                _console.WriteLine("Invalid arguments. (See SHIPYARD help)");
-            }
+
+            return CommandResult.INVALID;
         }
     }
 }

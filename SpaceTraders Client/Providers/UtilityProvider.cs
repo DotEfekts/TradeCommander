@@ -13,9 +13,10 @@
             commandHandler.RegisterCommand("CLEAR", HandleClear);
         }
 
-        private void HandleClear(string[] args)
+        private CommandResult HandleClear(string[] args)
         {
             _console.Clear();
+            return CommandResult.SUCCESS;
         }
     }
 }
