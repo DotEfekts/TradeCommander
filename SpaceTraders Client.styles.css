@@ -38,6 +38,27 @@
     width: 100%; }
     .layout-container .cargo th[b-ylj9g4p3fo] {
       text-align: left; }
+/* /Pages/RouteCommands.razor.rz.scp.css */
+.layout-container[b-6mty04rzgr] {
+  padding-left: 20px; }
+  .layout-container .ships[b-6mty04rzgr] {
+    width: 100%; }
+    .layout-container .ships th[b-6mty04rzgr] {
+      text-align: left; }
+/* /Pages/Routes.razor.rz.scp.css */
+.layout-container[b-qwx540g0j1] {
+  padding-left: 20px; }
+  .layout-container .ships[b-qwx540g0j1] {
+    width: 100%; }
+    .layout-container .ships th[b-qwx540g0j1] {
+      text-align: left; }
+/* /Pages/RouteShips.razor.rz.scp.css */
+.layout-container[b-vmqpgo8eyk] {
+  padding-left: 20px; }
+  .layout-container .ships[b-vmqpgo8eyk] {
+    width: 100%; }
+    .layout-container .ships th[b-vmqpgo8eyk] {
+      text-align: left; }
 /* /Pages/ShipCargo.razor.rz.scp.css */
 .layout-container[b-05jemc6j4e] {
   padding-left: 20px; }

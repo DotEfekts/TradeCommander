@@ -12,19 +12,44 @@ function moveCaretToEnd() {
     }, 0);
 }
 
-function renderMap(locations, width, height, shipData) {
+function renderMap(locations, width, height, shipData, shipFocus, locationSymbol) {
     const scale = 5;
+    const zoom = shipFocus ? 2.5 : 1;
 
     const canvas = document.getElementById('map');
     canvas.width = width * scale;
     canvas.height = height * scale;
 
-
     if (canvas.getContext) {
         const ctx = canvas.getContext('2d');
 
-        const xTranslate = canvas.width / 2;
-        const yTranslate = canvas.height / 2;
+        let xTranslate = canvas.width / 2;
+        let yTranslate = canvas.height / 2;
+
+        if (zoom > 1) {
+            if (shipFocus.lastFlightPlan && shipFocus.flightEnded === false) {
+                let flightPlanStart = locations.find(l => l.symbol === shipFocus.lastFlightPlan.departure);
+                let flightPlanEnd = locations.find(l => l.symbol === shipFocus.lastFlightPlan.destination);
+                let x1 = flightPlanStart.x;
+                let y1 = -flightPlanStart.y;
+                let x2 = flightPlanEnd.x;
+                let y2 = -flightPlanEnd.y;
+                let shipProgress = shipFocus.timeElapsed / (shipFocus.timeElapsed + shipFocus.lastFlightPlan.timeRemainingInSeconds);
+
+                let shipX = x1 + ((x2 - x1) * shipProgress);
+                let shipY = y1 + ((y2 - y1) * shipProgress);
+
+                xTranslate = xTranslate - (shipX * scale * zoom);
+                yTranslate = yTranslate - (shipY * scale * zoom);
+            } else if (locationSymbol) {
+                let location = locations.find(l => l.symbol === locationSymbol);
+                let x1 = location.x;
+                let y1 = -location.y;
+
+                xTranslate = xTranslate - (x1 * scale * zoom);
+                yTranslate = yTranslate - (y1 * scale * zoom);
+            }
+        }
 
         ctx.strokeStyle = 'lime';
         ctx.fillStyle = 'lime';
@@ -50,7 +75,7 @@ function renderMap(locations, width, height, shipData) {
 
 
             ctx.beginPath();
-            ctx.arc((x * scale) + xTranslate, (y * scale) + yTranslate, (isLargeBody ? 1.5 : 0.75) * scale, 0, 2 * Math.PI, false);
+            ctx.arc((x * scale * zoom) + xTranslate, (y * scale * zoom) + yTranslate, (isLargeBody ? 1.5 : 0.75) * scale * zoom, 0, 2 * Math.PI, false);
             if (isLargeBody)
                 ctx.stroke();
             else
@@ -62,8 +87,8 @@ function renderMap(locations, width, height, shipData) {
             let location = locations[i];
 
             let isLargeBody = location.type === "PLANET" || location.type === "GAS_GIANT";
-            let x = ((location.x + (isLargeBody ? 2.5 : 2)) * scale) + xTranslate;
-            let y = (-location.y * scale) + yTranslate;
+            let x = ((location.x + (isLargeBody ? 2.5 : 2)) * scale * zoom) + xTranslate;
+            let y = (-location.y * scale * zoom) + yTranslate;
 
             let textSize = ctx.measureText(location.symbol);
             let textLoc = { x1: x - 1, y1: y - 1, x2: x + textSize.width + 1, y2: y + 18 + 1 };
@@ -98,8 +123,8 @@ function renderMap(locations, width, height, shipData) {
                     let y2 = -flightPlanEnd.y;
 
                     ctx.beginPath();
-                    ctx.moveTo((x1 * scale) + xTranslate, (y1 * scale) + yTranslate);
-                    ctx.lineTo((x2 * scale) + xTranslate, (y2 * scale) + yTranslate);
+                    ctx.moveTo((x1 * scale * zoom) + xTranslate, (y1 * scale * zoom) + yTranslate);
+                    ctx.lineTo((x2 * scale * zoom) + xTranslate, (y2 * scale * zoom) + yTranslate);
                     ctx.stroke();
 
                     let shipProgress = ship.timeElapsed / (ship.timeElapsed + ship.lastFlightPlan.timeRemainingInSeconds);
@@ -107,10 +132,10 @@ function renderMap(locations, width, height, shipData) {
                     let shipY = y1 + ((y2 - y1) * shipProgress);
 
                     ctx.beginPath();
-                    ctx.arc((shipX * scale) + xTranslate, (shipY * scale) + yTranslate, 0.5 * scale, 0, 2 * Math.PI, false);
+                    ctx.arc((shipX * scale * zoom) + xTranslate, (shipY * scale * zoom) + yTranslate, 0.5 * scale * zoom, 0, 2 * Math.PI, false);
                     ctx.fill();
 
-                    ctx.fillText(ship.displayName, ((shipX + 1) * scale) + xTranslate, ((shipY + 1) * scale) + yTranslate);
+                    ctx.fillText(ship.displayName, ((shipX + 1) * scale * zoom) + xTranslate, ((shipY + 0.5) * scale * zoom) + yTranslate);
                 }
             }
         }
