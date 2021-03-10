@@ -27,7 +27,7 @@ namespace TradeCommander.Providers
         public bool DataRefreshing { get; private set; } = true;
         public DateTimeOffset LastUpdate { get; private set; } = DateTimeOffset.UtcNow;
 
-        private const int FLIGHT_PLAN_UPDATE_INTERVAL = 100;
+        private const int FLIGHT_PLAN_UPDATE_INTERVAL = 1000;
 
         public ShipsProvider(
             ISyncLocalStorageService localStorage,
