@@ -5,6 +5,8 @@ This application is available to use at [dotefekts.github.io/TradeCommander](htt
 
 ## Installation
 
+*Requires .Net 5 SDK*
+
 1. Clone the repo
     ```sh
     git clone https://github.com/DotEfekts/TradeCommander.git
