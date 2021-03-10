@@ -54,7 +54,7 @@ function renderMap(locations, width, height, shipData, shipFocus, locationSymbol
         ctx.strokeStyle = 'lime';
         ctx.fillStyle = 'lime';
         ctx.lineWidth = 1;
-        ctx.font = "18px 'Share Tech Mono'";
+        ctx.font = (18 * (zoom === 1 ? 1 : 1.5)) + "px 'Share Tech Mono'";
 
         ctx.beginPath();
         ctx.moveTo(0, yTranslate);
@@ -132,10 +132,11 @@ function renderMap(locations, width, height, shipData, shipFocus, locationSymbol
                     let shipY = y1 + ((y2 - y1) * shipProgress);
 
                     ctx.beginPath();
-                    ctx.arc((shipX * scale * zoom) + xTranslate, (shipY * scale * zoom) + yTranslate, 0.5 * scale * zoom, 0, 2 * Math.PI, false);
+                    ctx.fillRect(((shipX - 0.5) * scale * zoom) + xTranslate, ((shipY - 0.5) * scale * zoom) + yTranslate, 1 * scale * zoom, 1 * scale * zoom);
                     ctx.fill();
 
-                    ctx.fillText(ship.displayName, ((shipX + 1) * scale * zoom) + xTranslate, ((shipY + 0.5) * scale * zoom) + yTranslate);
+                    let textShift = ctx.measureText(ship.displayName).width + 2.5 * scale * zoom;
+                    ctx.fillText(ship.displayName, ((shipX + 1) * scale * zoom) + (xTranslate - textShift), ((shipY + 1.5) * scale * zoom) + yTranslate);
                 }
             }
         }

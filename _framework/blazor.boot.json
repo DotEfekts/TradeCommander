@@ -4,7 +4,7 @@
     "appsettings.json"
   ],
   "debugBuild": false,
-  "entryAssembly": "SpaceTraders Client",
+  "entryAssembly": "TradeCommander",
   "icuDataMode": 0,
   "linkerEnabled": true,
   "resources": {
@@ -25,7 +25,7 @@
       "Microsoft.JSInterop.dll": "sha256-bakD6JBVxfwh3Wri1MJq53pQXbLnKW4w8NcvgIOr7r8=",
       "Microsoft.JSInterop.WebAssembly.dll": "sha256-UwgpwjCHmUhISv5eMMiYhjnJhBAudE0gLHyB4B\/kLpQ=",
       "System.IO.Pipelines.dll": "sha256-qZYTUS+ga7CydtH54fYPbehFCvx3B49I74G8dxreTog=",
-      "SpaceTraders Client.dll": "sha256-mYwS4yaiwaLc4Hlm\/inqlMEnmPgjt8smcA\/4jFFG9Pk=",
+      "TradeCommander.dll": "sha256-TlrXMhaei\/5QSZP30+vssTcFeiTKulxhJ\/TuaEujkiU=",
       "System.Collections.Concurrent.dll": "sha256-0ftyAluaTaeAtX0oKilQQcST+V889AXWKyjopWBfwdg=",
       "System.Collections.Immutable.dll": "sha256-19jO0iWIZaE0g2MBKMpeRnBeW38TZVBKx\/fr7PwPtD8=",
       "System.Collections.NonGeneric.dll": "sha256-fIpc+4kXKBH3mTb\/XIpVNZZCQrLdjmPZhZYghYKET94=",
@@ -48,7 +48,7 @@
       "System.Text.Encodings.Web.dll": "sha256-yIMrT8Ppi8eSGnwO3Zz5D+x96yg\/7Drdnh499NtWIgU=",
       "System.Text.Json.dll": "sha256-HovFBiAqITAB3nw2D\/KNg\/2fdaSPX7nKD1UaDViP5nk=",
       "System.Text.RegularExpressions.dll": "sha256-BK5MBBQqicsfVrcv2bCDwOsqZWn2xNAAEYFYa9KotqA=",
-      "System.Private.CoreLib.dll": "sha256-nFHm\/8ZRvcJ\/awm4uHjpvW2PM6jcZQ8DuJiEAcRSWKM="
+      "System.Private.CoreLib.dll": "sha256-X1r26SRafhz0zu9nmAWEnZqcupvhQnvf+SzLJS2mPwY="
     },
     "lazyAssembly": null,
     "pdb": null,
