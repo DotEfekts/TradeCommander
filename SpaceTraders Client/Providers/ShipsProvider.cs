@@ -73,7 +73,7 @@ namespace SpaceTraders_Client.Providers
 
         public ShipData GetShipData(string id)
         {
-            if (_shipData != null && _shipData.ContainsKey(id))
+            if (id != null && _shipData != null && _shipData.ContainsKey(id))
                 return new ShipData
                 {
                     Id = _shipData[id].Id,

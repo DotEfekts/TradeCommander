@@ -103,6 +103,7 @@ namespace SpaceTraders_Client
                 {
                     _console.Clear();
                     _console.WriteLine("Welcome back, " + UserDetails.Username + ".");
+                    _console.WriteLine("For command list see HELP.");
                     return CommandResult.SUCCESS;
                 }
                 else
@@ -165,7 +166,10 @@ namespace SpaceTraders_Client
                     if (UserDetails == null)
                         _console.WriteLine("An error occurred during login. Please copy your token and login manually.");
                     else
+                    {
+                        _console.WriteLine("For command list see HELP.");
                         return CommandResult.SUCCESS;
+                    }
                 }
                 else if (httpResult.StatusCode == HttpStatusCode.Conflict) 
                 {

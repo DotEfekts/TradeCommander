@@ -59,7 +59,7 @@ namespace SpaceTraders_Client
             }
 
             if(result == CommandResult.INVALID)
-                _console.WriteLine("Invalid arguments. (See " + command.ToUpper() + " help)");
+                _console.WriteLine("Invalid arguments. (See " + commandName + " help)");
             return result;
         }
     }
