@@ -21,11 +21,11 @@ jobs:
 
     # publishes Blazor project to the release-folder
     - name: Publish .NET Core Project
-      run: dotnet publish "SpaceTraders Client/SpaceTraders Client.csproj" -c Release -o release --nologo
+      run: dotnet publish "TradeCommander/TradeCommander.csproj" -c Release -o release --nologo
     
-    # changes the base-tag in index.html from '/' to 'SpaceTradersUI' to match GitHub Pages repository subdirectory
-    - name: Change base-tag in index.html from / to SpaceTradersUI
-      run: sed -i 's/<base href="\/" \/>/<base href="\/SpaceTradersUI\/" \/>/g' release/wwwroot/index.html
+    # changes the base-tag in index.html from '/' to 'TradeCommander' to match GitHub Pages repository subdirectory
+    - name: Change base-tag in index.html from / to TradeCommander
+      run: sed -i 's/<base href="\/" \/>/<base href="\/TradeCommander\/" \/>/g' release/wwwroot/index.html
     
     # copy index.html to 404.html to serve the same file when a file is not found
     - name: copy index.html to 404.html

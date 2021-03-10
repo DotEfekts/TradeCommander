@@ -1,0 +1,64 @@
+﻿@page "/routes"
+@implements IDisposable
+@inject SpaceTradersUserInfo UserInfo
+@inject ShipsProvider ShipInfo
+@inject StateEvents StateEvents
+@inject AutoRouteProvider RouteInfo 
+
+<div class="layout-container">
+    @if (RouteInfo.RouteData == null)
+    {
+        <h3 class="body-title">Loading...</h3>
+    }
+    else if (RouteInfo.RouteData.Count == 0)
+    {
+        <h3 class="body-title">You have not created any routes.</h3>
+    }
+    else
+    {
+        <h3 class="body-title">Auto Routes</h3>
+        <table class="ships">
+            <thead>
+                <tr>
+                    <th>Id</th>
+                    <th>Name</th>
+                    <th>Commands in Route</th>
+                    <th>Ships on Route</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var routeData in RouteInfo.RouteData.Values)
+                {
+                    <tr>
+                        <td>@routeData.Id</td>
+                        <td>@routeData.DisplayName</td>
+                        <td>@routeData.Commands.Length</td>
+                        <td>@routeData.Ships.Length</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+</div>
+
+@code {
+    protected override void OnInitialized()
+    {
+        StateEvents.StateChange += HandleStateUpdate;
+        base.OnInitialized();
+    }
+
+    public void Dispose()
+    {
+        StateEvents.StateChange -= HandleStateUpdate;
+    }
+
+    private void HandleStateUpdate(object sender, string type)
+    {
+        if (type == "routesRefreshed" ||
+            type == "routeAdded" || type == "routeDeleted" ||
+            type == "routeCommandAdded" || type == "routeCommandDeleted" ||
+            type == "routeShipAdded" || type == "routeShipDeleted")
+            StateHasChanged();
+    }
+}
