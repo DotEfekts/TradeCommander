@@ -1,0 +1,236 @@
+﻿@import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap');
+
+* {
+    box-sizing: border-box;
+}
+
+html, body {
+    background-color: #030303;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 18px;
+    color: lime;
+    height: 100%;
+    padding: 0;
+    margin: 0;
+}
+
+body {
+    margin: auto;
+    max-height: 100vh;
+    max-width: 200vh;
+    overflow: hidden;
+}
+
+#app {
+    height: 100%;
+    filter: drop-shadow(0 0 1px lime);
+
+    @media(min-width: 200vh) {
+        width: calc(100% + 4px);
+        margin-left: -2px;
+
+        & {
+            border-left: 2px solid lime;
+            border-right: 2px solid lime;
+        }
+    }
+
+    .loading {
+        height: 100%;
+        width: 100%;
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        align-content: center;
+        justify-content: center;
+
+        img {
+            height: 150px;
+            filter: opacity(0.1) drop-shadow(0 0 0px lime) drop-shadow(0 0 0px lime) drop-shadow(0 0 0px lime) drop-shadow(0 0 0px lime);
+        }
+
+        .title {
+            display: flex;
+            flex-direction: column;
+            padding-top: 15px;
+
+            .text1 {
+                font-size: 100px;
+                line-height: 80px;
+            }
+
+            .text2 {
+                font-size: 52px;
+                padding-left: 10px;
+                line-height: 50px;
+            }
+        }
+
+        .subtitle {
+            width: 100%;
+            text-align: center;
+            font-size: 30px;
+            margin-top: 40px;
+        }
+    }
+}
+
+#app > .loading {
+    margin-left: 20px;
+}
+
+.crt::before {
+    content: " ";
+    display: block;
+    position: absolute;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    right: 0;
+    background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+    z-index: 2;
+    background-size: 100% 2px, 3px 100%;
+    pointer-events: none;
+}
+
+.crt::after {
+    content: " ";
+    display: block;
+    position: absolute;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    right: 0;
+    background: rgba(18, 16, 16, 0.1);
+    opacity: 0;
+    z-index: 2;
+    pointer-events: none;
+    /*animation: flicker 0.15s infinite;*/
+}
+
+#blazor-error-ui {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+
+    .content {
+        display: inline-block;
+        background: #030303;
+        padding: 25px;
+        padding-top: 45px;
+        position: relative;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        z-index: 1000;
+        border: solid 1px lime;
+        box-shadow: 0 0 2px lime;
+        text-align: center;
+
+        div {
+            margin-bottom: 20px;
+        }
+
+        a {
+            color: lime;
+            font-weight: 600;
+        }
+
+        .dismiss {
+            cursor: pointer;
+            position: absolute;
+            right: 0.75rem;
+            top: 0.5rem;
+        }
+    }
+}
+
+
+@keyframes flicker {
+    0% {
+        opacity: 0.27861;
+    }
+
+    5% {
+        opacity: 0.34769;
+    }
+
+    10% {
+        opacity: 0.23604;
+    }
+
+    15% {
+        opacity: 0.90626;
+    }
+
+    20% {
+        opacity: 0.18128;
+    }
+
+    25% {
+        opacity: 0.83891;
+    }
+
+    30% {
+        opacity: 0.65583;
+    }
+
+    35% {
+        opacity: 0.67807;
+    }
+
+    40% {
+        opacity: 0.26559;
+    }
+
+    45% {
+        opacity: 0.84693;
+    }
+
+    50% {
+        opacity: 0.96019;
+    }
+
+    55% {
+        opacity: 0.08594;
+    }
+
+    60% {
+        opacity: 0.20313;
+    }
+
+    65% {
+        opacity: 0.71988;
+    }
+
+    70% {
+        opacity: 0.53455;
+    }
+
+    75% {
+        opacity: 0.37288;
+    }
+
+    80% {
+        opacity: 0.71428;
+    }
+
+    85% {
+        opacity: 0.70419;
+    }
+
+    90% {
+        opacity: 0.7003;
+    }
+
+    95% {
+        opacity: 0.36108;
+    }
+
+    100% {
+        opacity: 0.24387;
+    }
+}
