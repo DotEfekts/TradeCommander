@@ -1,41 +1,29 @@
 ﻿using System.Threading.Tasks;
+using TradeCommander.Providers;
 
-namespace TradeCommander.Providers
+namespace TradeCommander.CommandHandlers
 {
-    public class HelpProvider
+    public class HelpCommandHandler : ICommandHandlerAsync
     {
-        private readonly CommandHandler _commandHandler;
         private readonly ConsoleOutput _console;
-        private readonly SpaceTradersUserInfo _userInfo;
+        private readonly CommandManager _commandManager;
 
-        public HelpProvider(
-            CommandHandler commandHandler,
+        public HelpCommandHandler(
             ConsoleOutput console,
-            SpaceTradersUserInfo userInfo
+            CommandManager commandManager
             )
         {
-            _commandHandler = commandHandler;
             _console = console;
-            _userInfo = userInfo;
-
-            commandHandler.RegisterAsyncCommand("HELP", HandleHelpAsync);
+            _commandManager = commandManager;
         }
 
-        private async Task<CommandResult> HandleHelpAsync(string[] args, bool background)
+        public string CommandName => "HELP";
+        public bool BackgroundCanUse => false;
+        public bool RequiresLogin => false;
+
+        public async Task<CommandResult> HandleCommandAsync(string[] args, bool background, bool loggedIn)
         {
-            if (_userInfo.UserDetails == null)
-            {
-                _console.WriteLine("You must be logged in to use this command.");
-                return CommandResult.FAILURE;
-            }
-
-            if (background)
-            {
-                _console.WriteLine("This command cannot be run automatically.");
-                return CommandResult.FAILURE;
-            }
-
-            if (args.Length == 0)
+            if (args.Length == 0 && loggedIn)
             {
                 _console.WriteLine("Commands available");
                 _console.WriteLine("SHIP: Provides functions for managing ships.");
@@ -45,22 +33,32 @@ namespace TradeCommander.Providers
                 _console.WriteLine("SHIPYARD: Provides functions for managing ships.");
                 _console.WriteLine("LOAN: Provides functions for managing loans.");
                 _console.WriteLine("CLEAR: Clears the screen.");
+                _console.WriteLine("LOGOUT: Logs out of the current user.");
                 return CommandResult.SUCCESS;
             }
-            else if (args[0] == "?" || args[0].ToLower() == "help")
+            else if(args.Length == 0 && !loggedIn)
+            {
+                _console.WriteLine("Commands available");
+                _console.WriteLine("LOGIN: Logs an existing user into the SpaceTraders API.");
+                _console.WriteLine("SIGNUP: Creates an account for the SpaceTraders API.");
+                _console.WriteLine("CLEAR: Clears the screen.");
+                return CommandResult.SUCCESS;
+            }
+            else if (args.Length == 1 && (args[0] == "?" || args[0].ToLower() == "help"))
             {
                 _console.WriteLine("HELP: Provides a list of commands.");
                 _console.WriteLine("HELP <Command Name>: Provides a help for a specific command.");
                 return CommandResult.SUCCESS;
             }
-            else if (args[0].ToLower() == "clear")
+            else if (args.Length == 1 && args[0].ToUpper() == "CLEAR")
             {
                 _console.WriteLine("CLEAR: Clears the screen.");
                 return CommandResult.SUCCESS;
             }
             else if (args.Length == 1)
             {
-                return await _commandHandler.HandleCommand(args[0] + " help");
+                var result = await _commandManager.InvokeCommand(args[0] + " help");
+                return result == CommandResult.INVALID ? CommandResult.FAILURE : result;
             }
 
             return CommandResult.INVALID;

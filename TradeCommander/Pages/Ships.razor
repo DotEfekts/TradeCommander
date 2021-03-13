@@ -1,12 +1,10 @@
 ﻿@implements IDisposable
-@inject SpaceTradersUserInfo UserInfo
-@inject ShipsProvider ShipInfo
-@inject StateEvents StateEvents
+@inject ShipsProvider ShipProvider
 
 <div class="layout-container">
-    @if (!ShipInfo.HasShips())
+    @if (ships == null)
     {
-        @if (ShipInfo.DataRefreshing)
+        @if (ShipProvider.DataRefreshing)
         {
             <h3 class="body-title">Loading...</h3>
         }
@@ -31,15 +29,15 @@
                 </tr>
             </thead>
             <tbody>
-                @foreach (var shipData in ShipInfo.GetShipData())
+                @foreach (var shipData in ships)
                 {
                     <tr>
                         <td>@shipData.Id</td>
                         <td>@shipData.DisplayName</td>
                         <td>@shipData.Ship.Type</td>
-                        <td>@shipData.Ship.Cargo.Sum(t => t.TotalVolume)/@shipData.Ship.MaxCargo@(shipData.Ship.Cargo.Any(t => t.Quantity > 0 && t.TotalVolume == 0) ? " +" + shipData.Ship.Cargo.Where(t => t.TotalVolume == 0).Sum(t => t.Quantity) : "")</td>
+                        <td>@shipData.Ship.Cargo.Sum(t => t.TotalVolume).ToString("N0")/@shipData.Ship.MaxCargo.ToString("N0")@(shipData.Ship.Cargo.Any(t => t.Quantity > 0 && t.TotalVolume == 0) ? " +" + shipData.Ship.Cargo.Where(t => t.TotalVolume == 0).Sum(t => t.Quantity).ToString("N0") : "")</td>
                         <td>@shipData.Ship.Speed</td>
-                        <td>@(shipData.Ship.Cargo.FirstOrDefault(t => t.Good == "FUEL")?.Quantity ?? 0)</td>
+                        <td>@(shipData.Ship.Cargo.FirstOrDefault(t => t.Good == "FUEL")?.Quantity.ToString("N0") ?? "0")</td>
                         <td>@GetShipStatus(shipData.Ship)</td>
                     </tr>
                 }
@@ -49,34 +47,43 @@
 </div>
 
 @code {
+    private ShipData[] ships;
+
     protected override void OnInitialized()
     {
-        StateEvents.StateChange += HandleStateUpdate;
+        ShipProvider.FlightsUpdated += FlightsUpdated;
+        ShipProvider.ShipsUpdated += ShipsUpdated;
         base.OnInitialized();
     }
 
     public void Dispose()
     {
-        StateEvents.StateChange -= HandleStateUpdate;
+        ShipProvider.FlightsUpdated -= FlightsUpdated;
+        ShipProvider.ShipsUpdated -= ShipsUpdated;
     }
 
-    private void HandleStateUpdate(object sender, string type)
+    private void FlightsUpdated(object sender, ShipEventArgs args)
     {
-        if (type == "shipsRefreshed" || type == "shipRenamed" || type == "cargoPurchased" || type == "cargoSold" || type == "flightsUpdated")
-            StateHasChanged();
+        StateHasChanged();
+    }
+
+    private void ShipsUpdated(object sender, ShipEventArgs args)
+    {
+        if(args.IsFullRefresh)
+            ships = args.ShipDetails;
+        StateHasChanged();
     }
 
     private string GetShipStatus(Ship ship)
     {
         if (string.IsNullOrWhiteSpace(ship.Location))
         {
-            var info = ShipInfo.GetShipData(ship.Id);
-            var plan = info.LastFlightPlan;
-            if(plan == null || (!ShipInfo.DataRefreshing && info.FlightEnded))
+            ShipProvider.TryGetShipData(ship.Id, out var data);
+            var plan = data?.LastFlightPlan;
+            if(plan == null || (!ShipProvider.DataRefreshing && data.FlightEnded))
                 return "In Flight - Unknown Plan";
             else
                 return "In Flight to " + plan.Destination + " - " + Math.Max(0, plan.TimeRemainingInSeconds) + "s";
-
         }
         else
         {

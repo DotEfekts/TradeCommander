@@ -1,8 +1,6 @@
 ﻿@page "/markets/{Symbol}"
 @implements IDisposable
-@inject SpaceTradersUserInfo UserInfo
-@inject MarketProvider MarketInfo
-@inject StateEvents StateEvents
+@inject MarketProvider MarketProvider
 
 <div class="layout-container">
     @if (market == null)
@@ -32,8 +30,8 @@
                     {
                     <tr>
                         <td>@good.Symbol</td>
-                        <td>@good.QuantityAvailable</td>
-                        <td>@good.PricePerUnit</td>
+                        <td>@good.QuantityAvailable.ToString("N0")</td>
+                        <td>@good.PricePerUnit.ToString("N0") credits</td>
                         <td>@good.VolumePerUnit</td>
                     </tr>
                     }
@@ -51,8 +49,8 @@
 
     protected override void OnInitialized()
     {
-        UpdateMarketData();
-        StateEvents.StateChange += HandleStateUpdate;
+        MarketProvider.MarketsUpdated += MarketsUpdated;
+
         base.OnInitialized();
     }
 
@@ -64,21 +62,18 @@
 
     public void Dispose()
     {
-        StateEvents.StateChange -= HandleStateUpdate;
+        MarketProvider.MarketsUpdated -= MarketsUpdated;
     }
 
-    private void HandleStateUpdate(object sender, string type)
+    private void MarketsUpdated(object sender, MarketEventArgs args)
     {
-        if (type == "marketUpdated")
-        {
-            UpdateMarketData();
-            StateHasChanged();
-        }
+        UpdateMarketData();
+        StateHasChanged();
     }
 
     private void UpdateMarketData()
     {
-        market = MarketInfo.GetMarket(Symbol);
+        market = MarketProvider.GetMarket(Symbol);
         if (market != null)
             dataAge = DateTimeOffset.UtcNow.Subtract(market.RetrievedAt);
     }

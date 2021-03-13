@@ -3,8 +3,8 @@
 @implements IDisposable
 @inject HttpClient Http
 @inject JsonSerializerOptions SerializerOptions
-@inject SpaceTradersUserInfo UserInfo
-@inject StateEvents StateEvents
+@inject UserProvider UserProvider
+@inject StateProvider StateProvider
 
 <div class="layout-container">
     @if (loading)
@@ -52,7 +52,7 @@
                                     <td>@loan.Id</td>
                                 }
                                 <td>@loan.Type</td>
-                                <td>@loan.RepaymentAmount</td>
+                                <td>@loan.RepaymentAmount.ToString("N0") credits</td>
                                 <td>@loan.Status</td>
                                 @if (!showPaid)
                                 {
@@ -78,7 +78,8 @@
 
     protected override void OnInitialized()
     {
-        StateEvents.StateChange += HandleStateUpdate;
+        StateProvider.StateUpdated += StateUpdated;
+
         base.OnInitialized();
     }
 
@@ -93,12 +94,12 @@
 
     public void Dispose()
     {
-        StateEvents.StateChange -= HandleStateUpdate;
+        StateProvider.StateUpdated -= StateUpdated;
     }
 
-    private async void HandleStateUpdate(object sender, string type)
+    private async void StateUpdated(object sender, string stateChange)
     {
-        if (type == "loanTaken" || type == "loanPaid")
+        if(stateChange == "loansUpdated")
         {
             await UpdateLoanData();
             StateHasChanged();
@@ -112,7 +113,7 @@
 
         try
         {
-            var loanResponse = await Http.GetFromJsonAsync<LoansResponse>("/users/" + UserInfo.UserDetails.Username + "/loans", SerializerOptions);
+            var loanResponse = await Http.GetFromJsonAsync<LoansResponse>("/users/" + UserProvider.UserDetails.Username + "/loans", SerializerOptions);
             if (loanResponse != null)
                 loans = loanResponse?.Loans.Where(t => showPaid ? t.Status == "PAID" : t.Status != "PAID").ToArray() ?? new Loan[0];
         }

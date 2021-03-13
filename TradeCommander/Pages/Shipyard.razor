@@ -28,20 +28,22 @@
                         <th>Speed</th>
                         <th>Plating</th>
                         <th>Weapons</th>
+                        <th>Average Cost</th>
                     </tr>
                 </thead>
                 <tbody>
                     @foreach (var ship in ships)
                     {
-                        <tr>
-                            <td>@ship.Type</td>
-                            <td>@ship.Manufacturer</td>
-                            <td>@ship.Class</td>
-                            <td>@ship.MaxCargo</td>
-                            <td>@ship.Speed</td>
-                            <td>@ship.Plating</td>
-                            <td>@ship.Weapons</td>
-                        </tr>
+                    <tr>
+                        <td>@ship.Type</td>
+                        <td>@ship.Manufacturer</td>
+                        <td>@ship.Class</td>
+                        <td>@ship.MaxCargo.ToString("N0")</td>
+                        <td>@ship.Speed</td>
+                        <td>@ship.Plating</td>
+                        <td>@ship.Weapons</td>
+                        <td>@ship.PurchaseLocations.Average(t => t.Price).ToString("N0") credits</td>
+                    </tr>
                     }
                 </tbody>
             </table>
@@ -61,7 +63,7 @@
                     {
                         <tr>
                             <td>@location.Location</td>
-                            <td>@location.Price</td>
+                            <td>@location.Price.ToString("N0") credits</td>
                         </tr>
                     }
                 </tbody>

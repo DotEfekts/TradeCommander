@@ -36,5 +36,22 @@ namespace TradeCommander.Models
         public int X { get; set; }
         public int Y { get; set; }
         public double? AnsibleProgress { get; set; }
+        public string Anomaly { get; set; }
+    }
+
+    public class SystemFlightPlansResponse
+    {
+        public SystemFlightPlan[] FlightPlans { get; set; }
+    }
+
+    public class SystemFlightPlan
+    {
+        public string Id { get; set; }
+        public DateTimeOffset CreatedAt { get; set; }
+        public DateTimeOffset ArrivesAt { get; set; }
+        public string To { get; set; }
+        public string From { get; set; }
+        public string Username { get; set; }
+        public string ShipType { get; set; }
     }
 }

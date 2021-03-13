@@ -1,12 +1,9 @@
 ﻿@page "/routes/commands/{RouteId}"
 @implements IDisposable
-@inject SpaceTradersUserInfo UserInfo
-@inject ShipsProvider ShipInfo
-@inject StateEvents StateEvents
-@inject AutoRouteProvider RouteInfo
+@inject AutoRouteProvider RouteProvider
 
 <div class="layout-container">
-    @if (RouteInfo.RouteData == null)
+    @if (!RouteProvider.RoutesLoaded())
     {
         <h3 class="body-title">Loading...</h3>
     }
@@ -44,8 +41,7 @@
 
     protected override void OnInitialized()
     {
-        UpdateRouteData();
-        StateEvents.StateChange += HandleStateUpdate;
+        RouteProvider.RoutesUpdated += RoutesUpdated;
         base.OnInitialized();
     }
 
@@ -57,22 +53,19 @@
 
     public void Dispose()
     {
-        StateEvents.StateChange -= HandleStateUpdate;
+        RouteProvider.RoutesUpdated -= RoutesUpdated;
     }
 
-    private void HandleStateUpdate(object sender, string type)
+    private void RoutesUpdated(object sender, RouteEventArgs args)
     {
-        if (type == "routesRefreshed" || type == "routeCommandAdded" || type == "routeCommandDeleted")
-        {
-            UpdateRouteData();
-            StateHasChanged();
-        }
+        UpdateRouteData();
+        StateHasChanged();
     }
 
     private void UpdateRouteData()
     {
-        if (RouteInfo.RouteData != null)
+        if (RouteProvider.RoutesLoaded())
             if (int.TryParse(RouteId, out int routeId))
-                route = RouteInfo.RouteData.GetValueOrDefault(routeId);
+                route = RouteProvider.GetRoute(routeId);
     }
 }

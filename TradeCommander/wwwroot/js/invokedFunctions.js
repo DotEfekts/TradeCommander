@@ -12,7 +12,12 @@ function moveCaretToEnd() {
     }, 0);
 }
 
-function renderMap(locations, width, height, shipData, shipFocus, locationSymbol) {
+function getInputVal() {
+    const input = document.getElementById('command-input');
+    return input.value;
+}
+
+function renderMap(locations, width, height, shipData, shipFocus, locationSymbol, flightPlans) {
     const scale = 5;
     const zoom = shipFocus ? 2.5 : 1;
 
@@ -21,6 +26,8 @@ function renderMap(locations, width, height, shipData, shipFocus, locationSymbol
     canvas.height = height * scale;
 
     if (canvas.getContext) {
+        locations.sort(sortLocation);
+
         const ctx = canvas.getContext('2d');
 
         let xTranslate = canvas.width / 2;
@@ -30,17 +37,20 @@ function renderMap(locations, width, height, shipData, shipFocus, locationSymbol
             if (shipFocus.lastFlightPlan && shipFocus.flightEnded === false) {
                 let flightPlanStart = locations.find(l => l.symbol === shipFocus.lastFlightPlan.departure);
                 let flightPlanEnd = locations.find(l => l.symbol === shipFocus.lastFlightPlan.destination);
-                let x1 = flightPlanStart.x;
-                let y1 = -flightPlanStart.y;
-                let x2 = flightPlanEnd.x;
-                let y2 = -flightPlanEnd.y;
-                let shipProgress = shipFocus.timeElapsed / (shipFocus.timeElapsed + shipFocus.lastFlightPlan.timeRemainingInSeconds);
 
-                let shipX = x1 + ((x2 - x1) * shipProgress);
-                let shipY = y1 + ((y2 - y1) * shipProgress);
+                if (flightPlanStart && flightPlanEnd) {
+                    let x1 = flightPlanStart.x;
+                    let y1 = -flightPlanStart.y;
+                    let x2 = flightPlanEnd.x;
+                    let y2 = -flightPlanEnd.y;
+                    let shipProgress = shipFocus.timeElapsed / (shipFocus.timeElapsed + shipFocus.lastFlightPlan.timeRemainingInSeconds);
 
-                xTranslate = xTranslate - (shipX * scale * zoom);
-                yTranslate = yTranslate - (shipY * scale * zoom);
+                    let shipX = x1 + ((x2 - x1) * shipProgress);
+                    let shipY = y1 + ((y2 - y1) * shipProgress);
+
+                    xTranslate = xTranslate - (shipX * scale * zoom);
+                    yTranslate = yTranslate - (shipY * scale * zoom);
+                }
             } else if (locationSymbol) {
                 let location = locations.find(l => l.symbol === locationSymbol);
                 let x1 = location.x;
@@ -54,7 +64,9 @@ function renderMap(locations, width, height, shipData, shipFocus, locationSymbol
         ctx.strokeStyle = 'lime';
         ctx.fillStyle = 'lime';
         ctx.lineWidth = 1;
-        ctx.font = (18 * (zoom === 1 ? 1 : 1.5)) + "px 'Share Tech Mono'";
+
+        let fontSize = 18 * (zoom === 1 ? 1 : 1.5)
+        ctx.font = fontSize + "px 'Share Tech Mono'";
 
         ctx.beginPath();
         ctx.moveTo(0, yTranslate);
@@ -91,19 +103,19 @@ function renderMap(locations, width, height, shipData, shipFocus, locationSymbol
             let y = (-location.y * scale * zoom) + yTranslate;
 
             let textSize = ctx.measureText(location.symbol);
-            let textLoc = { x1: x - 1, y1: y - 1, x2: x + textSize.width + 1, y2: y + 18 + 1 };
+            let textLoc = { x1: x - 1, y1: y - 1, x2: x + textSize.width + 1, y2: y + fontSize + 1 };
 
             for (let i = 0; i < textLocations.length; i++) {
                 let testLoc = textLocations[i];
 
-                if (overlaps(textLoc, testLoc)) {
-                    if(textLoc.y1 - testLoc.y1 > 0)
+                if (overlaps(textLoc, testLoc))
+                    if (textLoc.y1 - testLoc.y1 > 0) {
                         textLoc.y1 = testLoc.y2;
-                    else
-                        textLoc.y1 = testLoc.y1 - 19;
-
-                    break;
-                }
+                        textLoc.y2 = testLoc.y2 + fontSize + 1;
+                    } else {
+                        textLoc.y1 = testLoc.y1 - (fontSize + 1);
+                        textLoc.y2 = testLoc.y1;
+                    }
             }
 
             ctx.fillText(location.symbol, textLoc.x1 + 1, textLoc.y1 + 1);
@@ -131,12 +143,64 @@ function renderMap(locations, width, height, shipData, shipFocus, locationSymbol
                     let shipX = x1 + ((x2 - x1) * shipProgress);
                     let shipY = y1 + ((y2 - y1) * shipProgress);
 
+                    ship.x = shipX;
+                    ship.y = shipY;
+
                     ctx.beginPath();
                     ctx.fillRect(((shipX - 0.5) * scale * zoom) + xTranslate, ((shipY - 0.5) * scale * zoom) + yTranslate, 1 * scale * zoom, 1 * scale * zoom);
-                    ctx.fill();
+                }
+            }
+        }
 
-                    let textShift = ctx.measureText(ship.displayName).width + 2.5 * scale * zoom;
-                    ctx.fillText(ship.displayName, ((shipX + 1) * scale * zoom) + (xTranslate - textShift), ((shipY + 1.5) * scale * zoom) + yTranslate);
+        shipData.sort(sortLocation);
+
+        for (let i = 0; i < shipData.length; i++) {
+            let ship = shipData[i];
+
+            if (ship.x && ship.y) {
+                let textSize = ctx.measureText(ship.displayName);
+
+                let x = ((ship.x - 0.5) * scale * zoom) + (xTranslate - textSize.width);
+                let y = ((ship.y + 3) * scale * zoom) + yTranslate;
+
+                let textLoc = { x1: x, y1: y - 1, x2: x + textSize.width, y2: y + fontSize + 1 };
+
+                for (let i = 0; i < textLocations.length; i++) {
+                    let testLoc = textLocations[i];
+
+                    if (overlaps(textLoc, testLoc) && textLoc.y1 < testLoc.y2)
+                    {
+                        textLoc.y1 = testLoc.y2;
+                        textLoc.y2 = testLoc.y2  + fontSize + 1;
+                    }
+                }
+
+                ctx.fillText(ship.displayName, textLoc.x1, textLoc.y1 + 1);
+                textLocations.push(textLoc);
+            }
+        }
+
+        if (flightPlans !== null) {
+            for (let i = 0; i < flightPlans.length; i++) {
+                let plan = flightPlans[i];
+                let flightPlanStart = locations.find(l => l.symbol === plan.from);
+                let flightPlanEnd = locations.find(l => l.symbol === plan.to);
+
+                if (flightPlanStart && flightPlanEnd) {
+                    let x1 = flightPlanStart.x;
+                    let y1 = -flightPlanStart.y;
+                    let x2 = flightPlanEnd.x;
+                    let y2 = -flightPlanEnd.y;
+
+                    let shipProgress = plan.timeElapsed / (plan.timeElapsed + plan.timeRemaining);
+                    let shipX = x1 + ((x2 - x1) * shipProgress);
+                    let shipY = y1 + ((y2 - y1) * shipProgress);
+
+                    plan.x = shipX;
+                    plan.y = shipY;
+
+                    ctx.beginPath();
+                    ctx.strokeRect(((shipX - 0.5) * scale * zoom) + xTranslate, ((shipY - 0.5) * scale * zoom) + yTranslate, 1 * scale * zoom, 1 * scale * zoom);
                 }
             }
         }
@@ -147,4 +211,18 @@ function renderMap(locations, width, height, shipData, shipFocus, locationSymbol
         if (a.y1 >= b.y2 || b.y1 >= a.y2) return false;
         return true;
     }
+}
+
+function sortLocation(el1, el2) {
+    if (el1.y < el2.y)
+        return 1;
+    else if (el1.y > el2.y)
+        return -1;
+
+    if (el1.x < el2.x)
+        return 1;
+    else if (el1.x > el2.x)
+        return -1;
+    else
+        return 0;
 }

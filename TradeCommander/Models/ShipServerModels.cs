@@ -13,8 +13,10 @@ namespace TradeCommander.Models
     public class Ship
     {
         public string Id { get; set; }
-
+        
+        public string FlightPlanId { get; set; }
         public string Location { get; set; }
+
         public string Type { get; set; }
         public string Class { get; set; }
         public string Manufacturer { get; set; }

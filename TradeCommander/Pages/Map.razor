@@ -1,4 +1,6 @@
 ﻿@using System.Text.Json
+@using System.Threading
+@using System.Timers
 @page "/"
 @page "/map"
 @page "/map/{Symbol}"
@@ -7,8 +9,7 @@
 @inject HttpClient Http
 @inject JsonSerializerOptions SerializerOptions
 @inject NavigationManager NavManager
-@inject ShipsProvider ShipInfo
-@inject StateEvents StateEvents
+@inject ShipsProvider ShipProvider
 
 <div class="layout-container">
     @if (scanning)
@@ -32,15 +33,29 @@
 {
     [Parameter]
     public string Symbol { get; set; }
+    private string systemSymbol;
     private bool scanning = true;
+
     private Location[] locations = null;
     private ShipData[] ships = null;
     private ShipData focusedShip = null;
+    private ClientSystemFlightPlan[] flightPlans = null;
+
     private bool unknownPosition = false;
+
+    private const int SYSTEM_SHIP_UPDATE_INTERVAL = 10000;
+    private System.Timers.Timer timer;
+    private readonly SemaphoreSlim updateLock = new SemaphoreSlim(1, 1);
 
     protected override void OnInitialized()
     {
-        StateEvents.StateChange += HandleStateUpdate;
+        ShipProvider.FlightsUpdated += FlightsUpdated;
+        ShipProvider.ShipsUpdated += ShipsUpdated;
+
+        timer = new System.Timers.Timer(SYSTEM_SHIP_UPDATE_INTERVAL);
+        timer.Elapsed += UpdateSystemShips;
+        timer.Enabled = true;
+
         base.OnInitialized();
     }
 
@@ -55,18 +70,54 @@
 
     public void Dispose()
     {
-        StateEvents.StateChange -= HandleStateUpdate;
+        ShipProvider.FlightsUpdated -= FlightsUpdated;
+        ShipProvider.ShipsUpdated -= ShipsUpdated;
+        timer.Elapsed -= UpdateSystemShips;
+        timer.Dispose();
     }
 
-    private async void HandleStateUpdate(object sender, string type)
+    private async void FlightsUpdated(object sender, ShipEventArgs args)
     {
-        if (type == "shipsRefreshed")
-            await UpdateLocationData(true);
+        await InvokeMapDraw();
+    }
 
-        if (type == "shipsRefreshed" || type == "shipRenamed" || type == "flightsUpdated")
+    private async void ShipsUpdated(object sender, ShipEventArgs args)
+    {
+        await UpdateLocationData(true);
+        StateHasChanged();
+    }
+
+    private async void UpdateSystemShips(object sender, ElapsedEventArgs args)
+    {
+        if (await updateLock.WaitAsync(0))
         {
-            await InvokeMapDraw();
-            StateHasChanged();
+            try
+            {
+                if (systemSymbol != null)
+                {
+                    var systemFlightsResponse = await Http.GetFromJsonAsync<SystemFlightPlansResponse>("/game/systems/" + systemSymbol.ToUpper() + "/flight-plans", SerializerOptions);
+
+                    var timeNow = DateTimeOffset.UtcNow;
+                    flightPlans = systemFlightsResponse.FlightPlans.Select(p => new ClientSystemFlightPlan
+                    {
+                        Id = p.Id,
+                        ArrivesAt = p.ArrivesAt,
+                        CreatedAt = p.CreatedAt,
+                        To = p.To,
+                        From = p.From,
+                        Username = p.Username,
+                        ShipType = p.ShipType,
+                        TimeRemaining = (int)Math.Ceiling(p.ArrivesAt.Subtract(timeNow).TotalSeconds),
+                        TimeElapsed = (int)Math.Ceiling(timeNow.Subtract(p.CreatedAt).TotalSeconds)
+                    }).ToArray();
+                }
+                else
+                    flightPlans = null;
+            }
+            finally
+            {
+                updateLock.Release();
+            }
         }
     }
 
@@ -75,26 +126,29 @@
         if (!refresh)
             scanning = true;
 
-        if (ShipInfo.DataRefreshing)
+        if (ShipProvider.DataRefreshing)
             return;
 
         var symbol = Symbol ?? "OE";
 
-        ships = ShipInfo.GetReferencedShipData();
-        var ship = ships.FirstOrDefault(t => t.Id == ShipInfo.GetShipData(Symbol)?.Id);
-        if (ship != null)
+        ships = ShipProvider.GetShipData();
+        if (ShipProvider.TryGetShipData(Symbol, out var ship))
         {
             unknownPosition = ship.Ship.Location == null && ship.FlightEnded;
             if (!unknownPosition)
                 symbol = (ship.Ship.Location ?? ship.LastFlightPlan.Destination).Split("-")[0];
+            focusedShip = ship;
         }
+        else
+            focusedShip = null;
 
-        focusedShip = ship;
+        systemSymbol = symbol;
 
         try
         {
             var locationInfo = await Http.GetFromJsonAsync<SystemResponse>("/game/systems/" + symbol.ToUpper() + "/locations", SerializerOptions);
             locations = locationInfo?.Locations;
+            UpdateSystemShips(null, null);
             await InvokeMapDraw();
         }
         catch (Exception)
@@ -111,7 +165,7 @@
         {
             var width = (Math.Max(locations.Max(t => t.X), Math.Abs(locations.Min(t => t.X))) * 2) + 50;
             var height = (Math.Max(locations.Max(t => t.Y), Math.Abs(locations.Min(t => t.Y))) * 2) + 25;
-            await JS.InvokeVoidAsync("renderMap", locations, width, height, ships, unknownPosition ? null : focusedShip, focusedShip?.Ship.Location);
+            await JS.InvokeVoidAsync("renderMap", locations, width, height, ships, unknownPosition ? null : focusedShip, focusedShip?.Ship.Location, flightPlans);
         }
     }
 }

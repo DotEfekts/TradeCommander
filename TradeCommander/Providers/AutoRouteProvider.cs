@@ -1,70 +1,206 @@
 ﻿using Blazored.LocalStorage;
-using Microsoft.AspNetCore.Components;
-using TradeCommander.Models;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
+using System.Threading.Tasks;
 using System.Timers;
+using TradeCommander.CommandHandlers;
+using TradeCommander.Models;
 
 namespace TradeCommander.Providers
 {
     public class AutoRouteProvider
     {
         private readonly ISyncLocalStorageService _localStorage;
-        private readonly SpaceTradersUserInfo _userInfo;
-        private readonly ShipsProvider _shipInfo;
-        private readonly StateEvents _stateEvents;
+        private readonly UserProvider _userProvider;
+        private readonly ShipsProvider _shipProvider;
         private readonly ConsoleOutput _console;
-        private readonly NavigationManager _navManager;
-        private readonly CommandHandler _commandHandler;
-
+        private readonly CommandManager _commandManager;
         private readonly SemaphoreSlim updateLock = new SemaphoreSlim(1, 1);
 
-        internal Dictionary<int, AutoRoute> RouteData { get; private set; }
-        
+        private Dictionary<int, AutoRoute> _routeData;
+
         private const int ROUTE_UPDATE_INTERVAL = 1000;
+
+        public event EventHandler<RouteEventArgs> RoutesUpdated;
 
         public AutoRouteProvider(
             ISyncLocalStorageService localStorage,
-            SpaceTradersUserInfo userInfo,
-            ShipsProvider shipInfo,
-            StateEvents stateEvents,
-            CommandHandler commandHandler,
+            UserProvider userProvider,
+            ShipsProvider shipProvider,
             ConsoleOutput console,
-            NavigationManager navManager
+            CommandManager commandManager
             )
         {
             _localStorage = localStorage;
-            _userInfo = userInfo;
-            _shipInfo = shipInfo;
-            _stateEvents = stateEvents;
+            _userProvider = userProvider;
+            _shipProvider = shipProvider;
             _console = console;
-            _navManager = navManager;
-            _commandHandler = commandHandler;
+            _commandManager = commandManager;
 
-            stateEvents.StateChange += (source, type) =>
-            {
-                if (type == "shipsRefreshed" || type == "userChecked" || type == "userLogout")
-                    LoadRouteData();
-            };
+            _shipProvider.ShipsUpdated += UpdateRouteLinks;
 
-            LoadRouteData();
             StartRouteRunner();
-
-            commandHandler.RegisterCommand("AUTO", HandleAutoCommand);
         }
 
-        private void RelinkShipData()
+        public bool RoutesLoaded()
         {
-            if(RouteData != null && _shipInfo.HasShips())
+            return _routeData != null;
+        }
+
+        public bool HasRoutes()
+        {
+            return _routeData?.Any() ?? false;
+        }
+
+        public AutoRoute[] GetRouteData()
+        {
+            if (_routeData != null)
+                return _routeData.Values.ToArray();
+            else return Array.Empty<AutoRoute>();
+        }
+
+        public AutoRoute GetRoute(int id)
+        {
+            if (_routeData != null && _routeData.ContainsKey(id))
+                return _routeData[id];
+            else return null;
+        }
+
+        public bool TryGetRoute(int id, out AutoRoute route)
+        {
+            route = GetRoute(id);
+            return route != null;
+        }
+
+        public void AddRoute(int id, AutoRoute route)
+        {
+            if(_routeData != null)
+                _routeData.Add(id, route);
+
+            SaveRouteData();
+
+            RoutesUpdated?.Invoke(this, new RouteEventArgs
             {
-                foreach (var route in RouteData)
-                    foreach (var routeShip in route.Value.Ships)
-                        routeShip.ShipData = _shipInfo.GetReferencedShipData(routeShip.ShipId);
-                foreach (var route in RouteData)
-                    route.Value.Ships = route.Value.Ships.Where(t => t.ShipData != null).ToArray();
+                Routes = GetRouteData(),
+                IsFullRefresh = false
+            });
+        }
+
+        public void DeleteRoute(AutoRoute route)
+        {
+            var newRouteData = _routeData.Values.ToList();
+            newRouteData.Remove(route);
+            newRouteData.Where(r => r.Id > route.Id).ToList().ForEach(r => r.Id--);
+            _routeData = newRouteData.ToDictionary(r => r.Id);
+
+            SaveRouteData();
+
+            RoutesUpdated?.Invoke(this, new RouteEventArgs
+            {
+                Routes = GetRouteData(),
+                IsFullRefresh = false
+            });
+        }
+
+        public AutoRoute GetShipRoute(string serverId)
+        {
+            return _routeData.Values.FirstOrDefault(r => r.Ships.Any(s => s.ShipId == serverId));
+        }
+
+        public void AddCommandToRoute(int routeId, int index, string command)
+        {
+            if (TryGetRoute(routeId, out var route))
+            {
+                var list = route.Commands.ToList();
+                list.Where(c => c.Index >= index).ToList().ForEach(c => c.Index++);
+
+                list.Insert(index, new RouteCommand
+                {
+                    Index = index,
+                    Command = command,
+                });
+
+                route.Commands = list.ToArray();
+
+                SaveRouteData();
+
+                RoutesUpdated?.Invoke(this, new RouteEventArgs
+                {
+                    Routes = GetRouteData(),
+                    IsFullRefresh = false
+                });
             }
+        }
+
+        public void RemoveCommandFromRoute(int routeId, int index)
+        {
+            if (TryGetRoute(routeId, out var route))
+            {
+                index -= 1;
+                index = Math.Max(index, 0);
+
+                var newCommands = route.Commands.ToList();
+                newCommands.Remove(newCommands.First(t => t.Index == index));
+                newCommands.Where(r => r.Index > index).ToList().ForEach(r => r.Index--);
+                route.Commands = newCommands.ToArray();
+
+                SaveRouteData();
+
+                RoutesUpdated?.Invoke(this, new RouteEventArgs
+                {
+                    Routes = GetRouteData(),
+                    IsFullRefresh = false
+                });
+            }
+        }
+
+        public void AddShipToRoute(int routeId, ShipData shipData)
+        {
+            if (TryGetRoute(routeId, out var route))
+            {
+                var newShips = route.Ships.ToList();
+                newShips.Add(new RouteShip
+                {
+                    LastCommand = -1,
+                    ShipData = shipData,
+                    ShipId = shipData.ServerId
+                });
+                route.Ships = newShips.ToArray();
+
+                SaveRouteData();
+
+                RoutesUpdated?.Invoke(this, new RouteEventArgs
+                {
+                    Routes = GetRouteData(),
+                    IsFullRefresh = false
+                });
+            }
+        }
+
+        public void RemoveShipFromRoute(int routeId, RouteShip ship)
+        {
+            if(TryGetRoute(routeId, out var route))
+            {
+                var newShips = route.Ships.ToList();
+                newShips.Remove(ship);
+                route.Ships = newShips.ToArray();
+
+                SaveRouteData();
+
+                RoutesUpdated?.Invoke(this, new RouteEventArgs
+                {
+                    Routes = GetRouteData(),
+                    IsFullRefresh = false
+                });
+            }
+        }
+
+        private async void UpdateRouteLinks(object sender, ShipEventArgs args)
+        {
+            if (args.IsFullRefresh)
+                await LoadRouteData();
         }
 
         private void StartRouteRunner()
@@ -80,8 +216,9 @@ namespace TradeCommander.Providers
             {
                 try
                 {
-                    if (RouteData != null)
-                        foreach (var route in RouteData.Values)
+                    if (_routeData != null)
+                    {
+                        foreach (var route in _routeData.Values)
                             foreach (var routeShip in route.Ships)
                                 if (routeShip.ShipData.Ship.Location != null)
                                 {
@@ -97,7 +234,7 @@ namespace TradeCommander.Providers
                                     }
                                     while (command == null);
 
-                                    var result = await _commandHandler.HandleCommand(command.Command.Replace("$s", routeShip.ShipData.Id.ToString()), true);
+                                    var result = await _commandManager.InvokeCommand(command.Command.Replace("$s", routeShip.ShipData.Id.ToString()), true);
                                     if (result != CommandResult.SUCCESS)
                                     {
                                         var newShips = route.Ships.ToList();
@@ -112,8 +249,14 @@ namespace TradeCommander.Providers
 
                                 }
 
-                    SaveRouteData();
-                    _stateEvents.TriggerUpdate(this, "routesUpdated");
+                        SaveRouteData();
+
+                        RoutesUpdated?.Invoke(this, new RouteEventArgs
+                        {
+                            Routes = GetRouteData(),
+                            IsFullRefresh = false
+                        });
+                    }
                 }
                 finally
                 {
@@ -122,260 +265,58 @@ namespace TradeCommander.Providers
             }
         }
 
-        private CommandResult HandleAutoCommand(string[] args, bool background) 
+        private async Task LoadRouteData()
         {
-            if (_userInfo.UserDetails == null)
+            await updateLock.WaitAsync();
+            try
             {
-                _console.WriteLine("You must be logged in to use this command.");
-                return CommandResult.FAILURE;
-            }
+                if (_userProvider.UserDetails != null && !_shipProvider.DataRefreshing)
+                {
+                    Dictionary<int, AutoRoute> newRouteData = null;
+                    if (_localStorage.ContainKey("RouteData." + _userProvider.Username))
+                        newRouteData = _localStorage.GetItem<Dictionary<int, AutoRoute>>("RouteData." + _userProvider.Username);
+                    newRouteData ??= new Dictionary<int, AutoRoute>();
 
-            if (background)
-            {
-                _console.WriteLine("This command cannot be run automatically.");
-                return CommandResult.FAILURE;
-            }
+                    if (newRouteData != null)
+                    {
+                        foreach (var route in newRouteData)
+                            foreach (var routeShip in route.Value.Ships)
+                                routeShip.ShipData = _shipProvider.GetShipData(routeShip.ShipId);
+                        foreach (var route in newRouteData)
+                            route.Value.Ships = route.Value.Ships.Where(t => t.ShipData != null).ToArray();
+                    }
 
-            if (args.Length > 0)
-            {
-                if(args[0] == "?" || args[0].ToLower() == "help")
-                {
-                    _console.WriteLine("AUTO: Provides functions for automatic routes.");
-                    _console.WriteLine("Subcommands");
-                    _console.WriteLine("list: Lists all routes created - AUTO list");
-                    _console.WriteLine("    - Lists the commands on the route - AUTO list commands <Route Id>");
-                    _console.WriteLine("    - Lists the ships assigned to the route - AUTO list ships <Route Id>");
-                    _console.WriteLine("new: Creates a new auto route - AUTO new <Route Name>");
-                    _console.WriteLine("delete: Deletes an existing auto route - AUTO delete <Route Id>");
-                    _console.WriteLine("add: Adds a command to the end of the route. Adds at the position indicated if supplied. - AUTO add <Route Id> [Index] <Command>");
-                    _console.WriteLine("     Use $s to provide a ship id for a command.");
-                    _console.WriteLine("remove: Removes a command from the route - AUTO remove <Route Id> <Command Index>");
-                    _console.WriteLine("start: Start a ship running on the route - AUTO start <Route Id> <Ship Id/Name>");
-                    _console.WriteLine("stop: Stop a ship running the route - AUTO stop <Route Id> <Ship Id/Name>");
-                    return CommandResult.SUCCESS;
-                }
-                else if(args[0].ToLower() == "list")
-                {
-                    if(args.Length == 1)
-                    {
-                        _console.WriteLine("Displaying auto route list.");
-                        _navManager.NavigateTo(_navManager.BaseUri + "routes");
-                        return CommandResult.SUCCESS;
-                    }
-                    else if(args.Length == 3 && (args[1].ToLower() == "commands" || args[1].ToLower() == "ships"))
-                    {
-                        _console.WriteLine("Displaying auto route commands.");
-                        _navManager.NavigateTo(_navManager.BaseUri + "routes/" + args[1].ToLower() + "/" + args[2]);
-                        return CommandResult.SUCCESS;
-                    }
-                }
-                else if(args[0].ToLower() == "new" && args.Length == 2)
-                {
-                    var id = RouteData.Count + 1;
-                    RouteData.Add(id, new AutoRoute
-                    {
-                        Id = id,
-                        DisplayName = args[1],
-                        Commands = Array.Empty<RouteCommand>(),
-                        Ships = Array.Empty<RouteShip>()
-                    });
+                    _routeData = newRouteData;
 
                     SaveRouteData();
-                    _stateEvents.TriggerUpdate(this, "routeAdded");
-                    _console.WriteLine("New route created. Id: " + id + ".");
-                    _navManager.NavigateTo(_navManager.BaseUri + "routes");
-
-                    return CommandResult.SUCCESS;
                 }
-                else if (args[0].ToLower() == "delete" && args.Length == 2)
+                else
                 {
-                    if (int.TryParse(args[1], out int id) && RouteData.TryGetValue(id, out AutoRoute route))
-                    {
-                        var newRouteData = RouteData.Values.ToList();
-                        newRouteData.Remove(route);
-                        newRouteData.Where(r => r.Id > id).ToList().ForEach(r => r.Id--);
-                        RouteData = newRouteData.ToDictionary(r => r.Id);
-                        SaveRouteData();
-
-                        _stateEvents.TriggerUpdate(this, "routeDeleted");
-                        _console.WriteLine("Auto route deleted.");
-                        _navManager.NavigateTo(_navManager.BaseUri + "routes");
-
-                        return CommandResult.SUCCESS;
-                    }
-                    else
-                        _console.WriteLine("Invalid route id provided.");
-
-                    return CommandResult.FAILURE;
+                    _routeData = null;
                 }
-                else if (args[0].ToLower() == "add" && args.Length >= 3)
+
+                RoutesUpdated?.Invoke(this, new RouteEventArgs
                 {
-                    if(int.TryParse(args[1], out int id) && RouteData.TryGetValue(id, out AutoRoute route))
-                    {
-                        var argsAdjust = int.TryParse(args[2], out int index) ? 3 : 2;
-
-                        if(argsAdjust == 2)
-                            index = route.Commands.Length;
-                        else
-                            index -= 1;
-
-                        index = Math.Max(index, 0);
-                        index = Math.Min(index, route.Commands.Length);
-
-                        var list = route.Commands.ToList();
-                        list.Where(c => c.Index >= index).ToList().ForEach(c => c.Index++);
-
-                        var commandArr = new string[args.Length - argsAdjust];
-                        Array.Copy(args, argsAdjust, commandArr, 0, args.Length - argsAdjust);
-
-                        list.Insert(index, new RouteCommand
-                        {
-                            Index = index,
-                            Command = string.Join(' ', commandArr),
-                        });
-
-                        route.Commands = list.ToArray();
-                        SaveRouteData();
-
-                        _stateEvents.TriggerUpdate(this, "routeCommandAdded");
-                        _navManager.NavigateTo(_navManager.BaseUri + "routes/commands/" + id);
-                        _console.WriteLine("Command added successfully.");
-
-                        return CommandResult.SUCCESS;
-                    }
-                    else
-                        _console.WriteLine("Invalid route id provided.");
-
-                    return CommandResult.FAILURE;
-                }
-                else if (args[0].ToLower() == "remove" && args.Length == 3)
-                {
-                    if (int.TryParse(args[1], out int id) && RouteData.TryGetValue(id, out AutoRoute route))
-                    {
-                        if (int.TryParse(args[2], out int index) && index > 0 && index <= route.Commands.Length)
-                        {
-                            index -= 1;
-                            index = Math.Max(index, 0);
-
-                            var newCommands = route.Commands.ToList();
-                            newCommands.Remove(newCommands.First(t => t.Index == index));
-                            newCommands.Where(r => r.Index > index).ToList().ForEach(r => r.Index--);
-                            route.Commands = newCommands.ToArray();
-                            SaveRouteData();
-
-                            _stateEvents.TriggerUpdate(this, "routeCommandDeleted");
-                            _navManager.NavigateTo(_navManager.BaseUri + "routes/commands/" + id);
-                            _console.WriteLine("Command deleted successfully.");
-                            return CommandResult.SUCCESS;
-                        }
-                        else
-                            _console.WriteLine("Invalid command index provided.");
-                    }
-                    else
-                        _console.WriteLine("Invalid route id provided.");
-
-                    return CommandResult.FAILURE;
-                }
-                else if (args[0].ToLower() == "start" && args.Length == 3)
-                {
-                    if (int.TryParse(args[1], out int id) && RouteData.TryGetValue(id, out AutoRoute route))
-                    {
-                        var shipData = _shipInfo.GetShipDataByLocalId(args[2]);
-                        if (shipData != null)
-                        {
-                            var currentRoute = RouteData.Select(r => r.Value).FirstOrDefault(r => r.Ships.Any(s => s.ShipId == shipData.ServerId));
-                            if (currentRoute == null || currentRoute == route)
-                            {
-                                if (currentRoute == null)
-                                {
-                                    var newShips = route.Ships.ToList();
-                                    newShips.Add(new RouteShip
-                                    {
-                                        LastCommand = -1,
-                                        ShipData = shipData,
-                                        ShipId = shipData.ServerId
-                                    });
-                                    route.Ships = newShips.ToArray();
-
-                                    SaveRouteData();
-
-                                    _stateEvents.TriggerUpdate(this, "routeShipAdded");
-                                    _console.WriteLine("Ship added to route.");
-                                    _navManager.NavigateTo(_navManager.BaseUri + "routes/ships/" + id);
-                                }
-                                else
-                                    _console.WriteLine("Ship provided is already on route.");
-                                return CommandResult.SUCCESS;
-                            }
-                            else
-                                _console.WriteLine("Ship is already on another route. Please remove ship from current route before adding it to a new one.");
-                        }
-                        else
-                            _console.WriteLine("Invalid ship id. Please use number ids and not the full string id.");
-                    }
-                    else
-                        _console.WriteLine("Invalid route id provided.");
-                    return CommandResult.FAILURE;
-                }
-                else if (args[0].ToLower() == "stop" && args.Length == 3)
-                {
-                    if (int.TryParse(args[1], out int id) && RouteData.TryGetValue(id, out AutoRoute route))
-                    {
-                        var shipData = _shipInfo.GetShipDataByLocalId(args[2]);
-                        if (shipData != null)
-                        {
-                            var routeShip = route.Ships.FirstOrDefault(t => t.ShipId == shipData.ServerId);
-                            if (routeShip != null)
-                            {
-                                var newShips = route.Ships.ToList();
-                                newShips.Remove(routeShip);
-                                route.Ships = newShips.ToArray();
-
-                                SaveRouteData();
-
-                                _stateEvents.TriggerUpdate(this, "routeShipDeleted");
-                                _console.WriteLine("Ship removed from route.");
-                                _navManager.NavigateTo(_navManager.BaseUri + "routes/ships/" + id);
-                            }
-                            else
-                                _console.WriteLine("Ship provided is not currently on this route.");
-                            return CommandResult.SUCCESS;
-                        }
-                        else
-                            _console.WriteLine("Invalid ship id. Please use number ids and not the full string id.");
-                    }
-                    else
-                        _console.WriteLine("Invalid route id provided.");
-                    return CommandResult.FAILURE;
-                }
+                    Routes = GetRouteData(),
+                    IsFullRefresh = true
+                });
             }
-
-            return CommandResult.INVALID;
-        }
-
-        private void LoadRouteData()
-        {
-            if (_userInfo.UserDetails != null && !_shipInfo.DataRefreshing)
+            finally
             {
-                if (_localStorage.ContainKey("RouteData." + _userInfo.Username))
-                    RouteData = _localStorage.GetItem<Dictionary<int, AutoRoute>>("RouteData." + _userInfo.Username);
-                RouteData ??= new Dictionary<int, AutoRoute>();
-
-                RelinkShipData();
-                SaveRouteData();
+                updateLock.Release();
             }
-            else
-            {
-                RouteData = null;
-            }
-
-            _stateEvents.TriggerUpdate(this, "routesRefreshed");
         }
 
         private void SaveRouteData()
         {
-            if (RouteData != null)
-                _localStorage.SetItem("RouteData." + _userInfo.Username, RouteData);
+            if (_routeData != null)
+                _localStorage.SetItem("RouteData." + _userProvider.Username, _routeData);
         }
+    }
+
+    public class RouteEventArgs 
+    { 
+        public AutoRoute[] Routes { get; set; }
+        public bool IsFullRefresh { get; set; }
     }
 }

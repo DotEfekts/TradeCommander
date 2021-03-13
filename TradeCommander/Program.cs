@@ -6,6 +6,7 @@ using System;
 using System.Net.Http;
 using System.Text.Json;
 using System.Threading.Tasks;
+using TradeCommander.CommandHandlers;
 
 namespace TradeCommander
 {
@@ -16,48 +17,31 @@ namespace TradeCommander
             var builder = WebAssemblyHostBuilder.CreateDefault(args);
             builder.RootComponents.Add<App>("#app");
 
-            builder.Services.AddScoped<StateEvents>();
-            builder.Services.AddScoped<ConsoleOutput>();
-            builder.Services.AddScoped<CommandHandler>();
-
             builder.Services.AddScoped(sp => new JsonSerializerOptions {
                 AllowTrailingCommas = true,
                 PropertyNameCaseInsensitive = true
             });
 
-            builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri(builder.Configuration["base_url"]) });
+            builder.Services.AddScoped<HttpClient>(sp => new RateLimitedHttpClient(2) { BaseAddress = new Uri(builder.Configuration["base_url"]) });
             builder.Services.AddBlazoredLocalStorage(options =>
             {
                 options.JsonSerializerOptions.DictionaryKeyPolicy = null;
             });
-            builder.Services.AddScoped<SpaceTradersUserInfo>();
+
+            builder.Services.AddScoped<StateProvider>();
+
+            builder.Services.AddScoped<ConsoleOutput>();
+            builder.Services.AddScoped<UserProvider>();
+            builder.Services.AddScoped<CommandManager>();
 
             builder.Services.AddScoped<ShipsProvider>();
             builder.Services.AddScoped<MarketProvider>();
-            builder.Services.AddScoped<LocationProvider>();
-            builder.Services.AddScoped<ShipyardProvider>();
-            builder.Services.AddScoped<LoanProvider>();
             builder.Services.AddScoped<AutoRouteProvider>();
-            builder.Services.AddScoped<HelpProvider>();
-            builder.Services.AddScoped<UtilityProvider>();
 
             var host = builder.Build();
-
-            WarmServices(host.Services);
+            host.Services.GetService<CommandManager>().RegisterCommands();
 
             await host.RunAsync();
-        }
-
-        private static void WarmServices(IServiceProvider serviceProvider)
-        {
-            serviceProvider.GetRequiredService<ShipsProvider>();
-            serviceProvider.GetRequiredService<MarketProvider>();
-            serviceProvider.GetRequiredService<LocationProvider>();
-            serviceProvider.GetRequiredService<ShipyardProvider>();
-            serviceProvider.GetRequiredService<LoanProvider>();
-            serviceProvider.GetRequiredService<AutoRouteProvider>();
-            serviceProvider.GetRequiredService<HelpProvider>();
-            serviceProvider.GetRequiredService<UtilityProvider>();
         }
     }
 }

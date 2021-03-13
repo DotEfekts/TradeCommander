@@ -1,27 +1,46 @@
 ﻿@using Blazored.LocalStorage;
+@using TradeCommander.CommandHandlers;
 @inherits LayoutComponentBase
 @implements IDisposable
 @inject HttpClient Http
-@inject SpaceTradersUserInfo UserInfo
+@inject UserProvider UserProvider
 @inject ConsoleOutput Console
-@inject CommandHandler Commands
+@inject CommandManager Commands
 @inject IJSRuntime JS
-@inject StateEvents StateEvents
 @inject ISyncLocalStorageService LocalStorage
 
-<div class="page">
-    @if (!gameOffline.HasValue || !UserInfo.StartingDetailsChecked)
-    {
-        <div class="message">Loading...</div>
-    }
-    else
-    {
+
+@if (!gameOffline.HasValue || (!gameOffline.Value && !UserProvider.StartingDetailsChecked))
+{
+    <div class="loading">
+        <img src="img/spacetraders-logo.png" alt="SpaceTraders Logo" />
+        <div class="title">
+            <span class="text1">Trade</span>
+            <span class="text2">Commander</span>
+        </div>
+        <span class="subtitle">Is Loading...</span>
+    </div>
+}
+else if (gameOffline.HasValue && gameOffline.Value)
+{
+    <div class="loading">
+        <img src="img/spacetraders-logo.png" alt="SpaceTraders Logo" />
+        <div class="title">
+            <span class="text1">Trade</span>
+            <span class="text2">Commander</span>
+        </div>
+        <span class="subtitle">SpaceTraders API is offline.<br />Please refresh to retry.</span>
+    </div>
+}
+else
+{
+    <div class="page">
         <div class="info">
-            @if (UserInfo.UserDetails != null)
+            @if (UserProvider.UserDetails != null)
             {
                 <div class="info-bar">
-                    <span class="left">User: @UserInfo.UserDetails.Username</span>
-                    <span class="right">Credits: @UserInfo.UserDetails.Credits</span>
+                    <span class="left">User: @UserProvider.UserDetails.Username</span>
+                    <span class="right">Credits: @UserProvider.UserDetails.Credits.ToString("N0")</span>
                 </div>
                 <div class="ships"><TradeCommander.Pages.Ships></TradeCommander.Pages.Ships></div>
             }
@@ -35,15 +54,15 @@
             </div>
         </div>
         <div class="body">
-            @if (UserInfo.UserDetails != null)
+            @if (UserProvider.UserDetails != null)
             {
                 <div class="content">
                     @Body
                 </div>
             }
         </div>
-    }
-</div>
+    </div>
+}
 
 @code
 {
@@ -57,9 +76,7 @@
     private Queue<string> commandQueue = new Queue<string>();
     private bool queueRunning = false;
 
-
     private bool initialMessageShown = false;
-
 
     protected override async Task OnInitializedAsync()
     {
@@ -69,55 +86,48 @@
             gameOffline = result.StatusCode != System.Net.HttpStatusCode.OK;
         }
         catch (Exception) { gameOffline = true; }
-        finally { StateEvents.TriggerUpdate(this, "gameStatus"); }
+        finally { StateHasChanged(); }
 
-        Console.OutputUpdated += HandleConsoleUpdate;
-        StateEvents.StateChange += HandleStateUpdate;
-
-        if (LocalStorage.ContainKey("commandHistory"))
-            commandHistory = LocalStorage.GetItem<List<string>>("commandHistory");
+        Console.OutputUpdated += OutputUpdated;
+        UserProvider.UserUpdated += UserUpdated;
 
         base.OnInitialized();
     }
 
     public void Dispose()
     {
-        Console.OutputUpdated -= HandleConsoleUpdate;
-        StateEvents.StateChange -= HandleStateUpdate;
+        Console.OutputUpdated -= OutputUpdated;
+        UserProvider.UserUpdated -= UserUpdated;
     }
 
-    private void HandleConsoleUpdate(object sender, string type)
+    private void OutputUpdated(object sender, string type)
     {
         StateHasChanged();
         JS.InvokeVoidAsync("scrollConsoleDown");
     }
 
-    private void HandleStateUpdate(object sender, string type)
+    private void UserUpdated(object sender, UserEventArgs eventArgs)
     {
-        if (type == "userChecked" || type == "gameStatus" || type == "cargoPurchased" || type == "cargoSold")
-            StateHasChanged();
-        if (type == "userLogout")
+        if (eventArgs.UserDetails == null)
             initialMessageShown = false;
-        if (type == "userLogin" || type == "userLogout")
-        {
-            commandHistory.Clear();
-            LocalStorage.SetItem("commandHistory", commandHistory);
 
-            historyIndex = -1;
-            StateHasChanged();
-        }
+        if (!eventArgs.IsInitialCheck)
+            commandHistory.Clear();
+
+        if (eventArgs.UserDetails != null && LocalStorage.ContainKey("CommandHistory." + eventArgs.UserDetails.Username))
+            commandHistory = LocalStorage.GetItem<List<string>>("CommandHistory." + eventArgs.UserDetails.Username);
+
+        historyIndex = -1;
+
+        StateHasChanged();
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (!initialMessageShown && UserInfo.StartingDetailsChecked && gameOffline.HasValue)
+        if (!initialMessageShown && UserProvider.StartingDetailsChecked && gameOffline.HasValue)
         {
             initialMessageShown = true;
-            if (gameOffline == true)
-            {
-                Console.WriteLine("Please refresh to retry.");
-            }
-            else if (UserInfo.UserDetails == null)
+            if (UserProvider.UserDetails == null)
             {
                 await Console.WriteLine("User details required.", 500);
                 await Console.WriteLine("Login command: LOGIN <Username> <Token>", 250);
@@ -125,7 +135,7 @@
             }
             else
             {
-                Console.WriteLine("Welcome back, " + UserInfo.UserDetails.Username + ".");
+                Console.WriteLine("Welcome back, " + UserProvider.Username + ".");
                 StateHasChanged();
             }
         }
@@ -140,12 +150,21 @@
             var command = commandInput;
             commandInput = "";
 
-            if (!string.IsNullOrWhiteSpace(command))
-            {
-                commandHistory.Insert(0, command);
-                LocalStorage.SetItem("commandHistory", commandHistory);
-            }
+            string historyCommand = null;
+            if (historyIndex != -1)
+                historyCommand = commandHistory[historyIndex];
             historyIndex = -1;
+
+            if (command != historyCommand && !string.IsNullOrWhiteSpace(command) && UserProvider.Username != null)
+            {
+
+                commandHistory.Insert(0, command);
+                if (commandHistory.Count > 100)
+                    commandHistory.RemoveRange(100, commandHistory.Count - 100);
+
+                LocalStorage.SetItem("CommandHistory." + UserProvider.Username, commandHistory);
+            }
+
 
             await AddToCommandQueue(command);
         }
@@ -187,11 +206,7 @@
                 var nextCommand = commandQueue.Dequeue();
                 Console.WriteLine("");
                 Console.WriteLine("> " + nextCommand);
-
-                if (gameOffline == true)
-                    Console.WriteLine("SpaceTraders API is offline.");
-                else
-                    await Commands.HandleCommand(nextCommand);
+                await Commands.InvokeCommand(nextCommand, false);
             } while (commandQueue.Any());
             queueRunning = false;
         }

@@ -10,55 +10,41 @@ using System.Net.Http.Json;
 using System.Text.Json;
 using System.Threading.Tasks;
 
-namespace TradeCommander.Providers
+namespace TradeCommander.CommandHandlers
 {
-    public class LocationProvider
+    public class ScanCommandHandler : ICommandHandlerAsync
     {
         private readonly ConsoleOutput _console;
         private readonly NavigationManager _navManager;
         private readonly HttpClient _http;
         private readonly JsonSerializerOptions _serializerOptions;
-        private readonly SpaceTradersUserInfo _userInfo;
 
-        public LocationProvider(
-            CommandHandler commandHandler,
+        public ScanCommandHandler(
             ConsoleOutput console,
             NavigationManager navManager,
             HttpClient http,
-            JsonSerializerOptions serializerOptions,
-            SpaceTradersUserInfo userInfo
+            JsonSerializerOptions serializerOptions
             )
         {
             _console = console;
             _navManager = navManager;
             _http = http;
             _serializerOptions = serializerOptions;
-            _userInfo = userInfo;
-
-            commandHandler.RegisterAsyncCommand("SCAN", HandleScanCommandAsync);
         }
 
-        private async Task<CommandResult> HandleScanCommandAsync(string[] args, bool background)
+        public string CommandName => "SCAN";
+        public bool BackgroundCanUse => false;
+        public bool RequiresLogin => true;
+
+        public async Task<CommandResult> HandleCommandAsync(string[] args, bool background, bool loggedIn)
         {
-            if (_userInfo.UserDetails == null)
-            {
-                _console.WriteLine("You must be logged in to use this command.");
-                return CommandResult.FAILURE;
-            }
-
-            if (background)
-            {
-                _console.WriteLine("This command cannot be run automatically.");
-                return CommandResult.FAILURE;
-            }
-
             if (args.Length == 0)
             {
                 _console.WriteLine("Displaying systems list.");
                 _navManager.NavigateTo(_navManager.BaseUri + "systems");
                 return CommandResult.SUCCESS;
             }
-            else if (args[0] == "?" || args[0].ToLower() == "help")
+            else if (args.Length == 1 && (args[0] == "?" || args[0].ToLower() == "help"))
             {
                 _console.WriteLine("SCAN: Provides functions for searching systems for locations.");
                 _console.WriteLine("Usage: Displays details about the systems available - SCAN");
@@ -68,20 +54,20 @@ namespace TradeCommander.Providers
                 _console.WriteLine("location: Prints info about a specific location - SCAN location <Location Symbol>");
                 return CommandResult.SUCCESS;
             }
-            else if (args[0].ToLower() == "map" && args.Length == 2)
+            else if (args.Length == 2 && args[0].ToLower() == "map")
             {
                 _console.WriteLine("Displaying system map for " + args[1].ToUpper() + ".");
                 _navManager.NavigateTo(_navManager.BaseUri + "map/" + args[1].ToUpper());
 
                 return CommandResult.SUCCESS;
             }
-            else if(args[0].ToLower() == "system" && args.Length == 2)
+            else if(args.Length == 2 && args[0].ToLower() == "system")
             {
                 _console.WriteLine("Displaying locations list for " + args[1].ToUpper() + ".");
                 _navManager.NavigateTo(_navManager.BaseUri + "systems/" + args[1].ToUpper());
                 return CommandResult.SUCCESS;
             }
-            else if(args[0].ToLower() == "location" && args.Length == 2)
+            else if(args.Length == 2 && args[0].ToLower() == "location")
             {
                 _console.WriteLine("Scanning location: " + args[1].ToUpper() + ".");
                 try
@@ -92,6 +78,8 @@ namespace TradeCommander.Providers
                     await _console.WriteLine("Name: " + locationInfo.Planet.Name, 100);
                     if(locationInfo.Planet.AnsibleProgress.HasValue)
                         await _console.WriteLine("Ansible Progress: " + locationInfo.Planet.AnsibleProgress, 100);
+                    if (!string.IsNullOrEmpty(locationInfo.Planet.Anomaly))
+                        await _console.WriteLine("Anomaly Data: " + locationInfo.Planet.Anomaly, 100);
                     await _console.WriteLine("X: " + locationInfo.Planet.X, 100);
                     await _console.WriteLine("Y: " + locationInfo.Planet.Y, 100);
 

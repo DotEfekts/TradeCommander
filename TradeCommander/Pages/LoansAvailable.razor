@@ -32,7 +32,7 @@
                     {
                     <tr>
                         <td>@loan.Type</td>
-                        <td>@loan.Amount</td>
+                        <td>@loan.Amount.ToString("N0") credits</td>
                         <td>@(loan.CollateralRequired ? "Yes" : "No")</td>
                         <td>@loan.Rate</td>
                         <td>@(loan.TermInDays)d</td>

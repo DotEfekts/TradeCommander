@@ -1,13 +1,11 @@
 ﻿@page "/ships/cargo/{ShipId}"
 @implements IDisposable
-@inject SpaceTradersUserInfo UserInfo
-@inject ShipsProvider ShipInfo
-@inject StateEvents StateEvents
+@inject ShipsProvider ShipProvider
 
 <div class="layout-container">
     @if (shipData == null)
     {
-        @if (ShipInfo.DataRefreshing)
+        @if (ShipProvider.DataRefreshing)
         {
             <h3 class="body-title">Loading...</h3>
         }
@@ -39,9 +37,9 @@
                     {
                     <tr>
                         <td>@cargo.Good</td>
-                        <td>@cargo.Quantity</td>
+                        <td>@cargo.Quantity.ToString("N0")</td>
                         <td>@(cargo.TotalVolume / cargo.Quantity)</td>
-                        <td>@cargo.TotalVolume</td>
+                        <td>@cargo.TotalVolume.ToString("N0")</td>
                     </tr>
                     }
                 </tbody>
@@ -57,8 +55,9 @@
 
     protected override void OnInitialized()
     {
+        ShipProvider.ShipsUpdated += ShipsUpdated;
+
         UpdateCargoData();
-        StateEvents.StateChange += HandleStateUpdate;
         base.OnInitialized();
     }
 
@@ -70,21 +69,18 @@
 
     public void Dispose()
     {
-        StateEvents.StateChange -= HandleStateUpdate;
+        ShipProvider.ShipsUpdated -= ShipsUpdated;
     }
 
-    private void HandleStateUpdate(object sender, string type)
+    private void ShipsUpdated(object sender, ShipEventArgs args)
     {
-        if (type == "shipsRefreshed" || type == "cargoUpdated" || type == "cargoPurchased" || type == "cargoSold")
-        {
-            UpdateCargoData();
-            StateHasChanged();
-        }
+        UpdateCargoData();
+        StateHasChanged();
     }
 
     private void UpdateCargoData()
     {
-        if(ShipInfo.HasShips())
-            shipData = ShipInfo.GetShipData(ShipId);
+        if(ShipProvider.TryGetShipData(ShipId, out var data))
+            shipData = data;
     }
 }

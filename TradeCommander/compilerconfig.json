@@ -46,5 +46,9 @@
   {
     "outputFile": "Pages/RouteShips.razor.css",
     "inputFile": "Pages/RouteShips.razor.scss"
+  },
+  {
+    "outputFile": "wwwroot/css/app.css",
+    "inputFile": "wwwroot/css/app.scss"
   }
 ]
