@@ -6,22 +6,6 @@
 * {
   box-sizing: border-box; }
 
-/* width */
-::-webkit-scrollbar {
-  width: 5px; }
-
-/* Track */
-::-webkit-scrollbar-track {
-  background: transparent; }
-
-/* Handle */
-::-webkit-scrollbar-thumb {
-  background: var(--content-color); }
-
-/* Handle on hover */
-::-webkit-scrollbar-thumb:hover {
-  background: var(--content-color); }
-
 html, body {
   background-color: var(--background-color);
   font-family: 'Share Tech Mono', monospace;
@@ -35,7 +19,20 @@ body {
   margin: auto;
   max-height: 100vh;
   max-width: 200vh;
-  overflow: hidden; }
+  overflow: hidden;
+  scrollbar-color: var(--content-color) transparent;
+  /* width */
+  /* Track */
+  /* Handle */
+  /* Handle on hover */ }
+  body ::-webkit-scrollbar {
+    width: 5px; }
+  body ::-webkit-scrollbar-track {
+    background: transparent; }
+  body ::-webkit-scrollbar-thumb {
+    background: var(--content-color); }
+  body ::-webkit-scrollbar-thumb:hover {
+    background: var(--content-color); }
 
 #app {
   height: 100%; }
