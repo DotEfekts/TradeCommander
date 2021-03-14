@@ -53,6 +53,9 @@
     {
         ShipProvider.FlightsUpdated += FlightsUpdated;
         ShipProvider.ShipsUpdated += ShipsUpdated;
+
+        ships = ShipProvider.GetShipData();
+
         base.OnInitialized();
     }
 

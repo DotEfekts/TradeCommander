@@ -28,6 +28,13 @@ namespace TradeCommander.Providers
             LoadSettings();
         }
 
+        public Setting[] GetSettings()
+        {
+            if (_settings != null)
+                return _settings.Values.ToArray();
+            return Array.Empty<Setting>();
+        }
+
         public bool TryGetSetting(string settingKey, out Setting setting)
         {
             setting = GetSetting(settingKey);

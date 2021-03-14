@@ -30,27 +30,25 @@
       border-bottom: 2px solid var(--content-color);
       padding-left: 20px;
       padding-right: 5px;
-      overflow-y: auto; }
+      overflow-y: auto;
+      scrollbar-width: thin; }
     .page .info .console {
       flex: 1;
       min-height: 30%;
       display: flex;
       flex-direction: column;
-      padding-left: 20px;
-      padding-right: 5px; }
+      padding-left: 20px; }
       .page .info .console .output {
         flex: 1;
-        position: relative; }
-        .page .info .console .output .console-text {
-          position: absolute;
-          bottom: calc(-1em - 20px);
-          max-height: calc(100% + calc(1em + 20px));
-          width: 100%;
-          margin: 0;
-          padding-right: 5px;
-          padding-bottom: calc(1em + 20px);
-          overflow-y: auto;
-          white-space: pre-wrap; }
+        overflow-y: auto;
+        scrollbar-width: thin; }
+        .page .info .console .output .text-container {
+          display: flex;
+          min-height: 100%;
+          align-items: flex-end; }
+          .page .info .console .output .text-container p {
+            white-space: pre-wrap;
+            margin: 0; }
       .page .info .console .command-input {
         display: flex;
         align-items: center;

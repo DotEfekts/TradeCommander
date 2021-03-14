@@ -42,6 +42,7 @@
             padding-left: 20px;
             padding-right: 5px;
             overflow-y: auto;
+            scrollbar-width: thin;
         }
 
         .console {
@@ -50,22 +51,21 @@
             display: flex;
             flex-direction: column;
             padding-left: 20px;
-            padding-right: 5px;
 
             .output {
                 flex: 1;
-                position: relative;
+                overflow-y: auto;
+                scrollbar-width: thin;
 
-                .console-text {
-                    position: absolute;
-                    bottom: calc(-1em - 20px);
-                    max-height: calc(100% + calc(1em + 20px));
-                    width: 100%;
-                    margin: 0;
-                    padding-right: 5px;
-                    padding-bottom: calc(1em + 20px);
-                    overflow-y: auto;
-                    white-space: pre-wrap;
+                .text-container {
+                    display: flex;
+                    min-height: 100%;
+                    align-items: flex-end;
+
+                    p {
+                        white-space: pre-wrap;
+                        margin: 0;
+                    }
                 }
             }
 

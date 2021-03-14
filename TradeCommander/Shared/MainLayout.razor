@@ -46,8 +46,10 @@ else
                 <div class="ships"><TradeCommander.Pages.Ships></TradeCommander.Pages.Ships></div>
             }
             <div class="console">
-                <div class="output">
-                    <p class="console-text" id="console">@Console.Output</p>
+                <div class="output" id="console">
+                    <div class="text-container">
+                        <p class="console-text">@Console.Output</p>
+                    </div>
                 </div>
                 <div class="command-input">
                     <span>&gt;</span><input type="text" name="command-input" id="command-input" @bind="commandInput" @bind:event="oninput" @onkeydown="ReadCommand" />
@@ -93,6 +95,10 @@ else
         UserProvider.UserUpdated += UserUpdated;
         SettingsProvider.SettingsUpdated += SettingsUpdated;
 
+        if (UserProvider.Username != null && LocalStorage.ContainKey("CommandHistory." + UserProvider.Username))
+            commandHistory = LocalStorage.GetItem<List<string>>("CommandHistory." + UserProvider.Username);
+        ApplySettings(SettingsProvider.GetSettings());
+
         base.OnInitialized();
     }
 
@@ -117,8 +123,8 @@ else
         if (!eventArgs.IsInitialCheck)
             commandHistory.Clear();
 
-        if (eventArgs.UserDetails != null && LocalStorage.ContainKey("CommandHistory." + eventArgs.UserDetails.Username))
-            commandHistory = LocalStorage.GetItem<List<string>>("CommandHistory." + eventArgs.UserDetails.Username);
+        if (eventArgs.UserDetails != null && LocalStorage.ContainKey("CommandHistory." + UserProvider.Username))
+            commandHistory = LocalStorage.GetItem<List<string>>("CommandHistory." + UserProvider.Username);
 
         historyIndex = -1;
 
@@ -215,9 +221,14 @@ else
         }
     }
 
-    private async void SettingsUpdated(object sender, SettingsEventArgs eventArgs)
+    private void SettingsUpdated(object sender, SettingsEventArgs eventArgs)
     {
-        var contentColour = eventArgs.Settings.FirstOrDefault(s => s.Key == "content-colour");
+        ApplySettings(eventArgs.Settings);
+    }
+
+    private async void ApplySettings(Setting[] settings)
+    {
+        var contentColour = settings.FirstOrDefault(s => s.Key == "content-colour");
         if (contentColour != null)
         {
             if (!await JS.InvokeAsync<bool>("setCssVar", "--content-color", contentColour.Value))
@@ -226,7 +237,7 @@ else
         else
             await JS.InvokeVoidAsync("setCssVar", "--content-color", null);
 
-        var backgroundColour = eventArgs.Settings.FirstOrDefault(s => s.Key == "background-colour");
+        var backgroundColour = settings.FirstOrDefault(s => s.Key == "background-colour");
         if (backgroundColour != null)
         {
             if (!await JS.InvokeAsync<bool>("setCssVar", "--background-color", backgroundColour.Value))
@@ -235,7 +246,7 @@ else
         else
             await JS.InvokeVoidAsync("setCssVar", "--background-color", null);
 
-        var crtEffect = eventArgs.Settings.FirstOrDefault(s => s.Key == "crt-effect");
+        var crtEffect = settings.FirstOrDefault(s => s.Key == "crt-effect");
         if (crtEffect != null && crtEffect.Value == "off")
             await JS.InvokeVoidAsync("setBodyClass", null);
         else
