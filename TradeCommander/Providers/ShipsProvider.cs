@@ -20,9 +20,9 @@ namespace TradeCommander.Providers
         private readonly JsonSerializerOptions _serializerOptions;
         private Dictionary<string, ShipData> _shipData;
 
-        private string _appBase;
+        private readonly string _appBase;
+        private readonly Random _rand;
         private string[] _shipNames;
-        private Random _rand;
 
         public bool DataRefreshing { get; private set; } = true;
 
@@ -245,12 +245,19 @@ namespace TradeCommander.Providers
                 {
                     if(ship.DisplayName == ship.ServerId)
                     {
-                        string name = "";
-                        do
+                        var currentNames = _shipData.Values.Select(s => s.DisplayName);
+                        if (!_shipNames.All(n => currentNames.Contains(n)))
                         {
-                            name = _shipNames[_rand.Next(_shipNames.Length)];
-                        } while (_shipData.Values.Any(s => s.DisplayName == name));
-                        ship.DisplayName = name;
+                            var randomNames = _shipNames.OrderBy(n => _rand.Next());
+                            foreach(var name in randomNames)
+                                if (!currentNames.Contains(name))
+                                {
+                                    ship.DisplayName = name;
+                                    break;
+                                }
+                        }
+                        else
+                            ship.DisplayName = ship.Id.ToString();
                     }
                 }
         }
