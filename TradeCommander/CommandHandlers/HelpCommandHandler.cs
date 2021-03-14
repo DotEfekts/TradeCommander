@@ -32,6 +32,7 @@ namespace TradeCommander.CommandHandlers
                 _console.WriteLine("AUTO: Provides functions for creating automatic routes for ships.");
                 _console.WriteLine("SHIPYARD: Provides functions for managing ships.");
                 _console.WriteLine("LOAN: Provides functions for managing loans.");
+                _console.WriteLine("SETTINGS: Provides functions for changing the client settings.");
                 _console.WriteLine("CLEAR: Clears the screen.");
                 _console.WriteLine("LOGOUT: Logs out of the current user.");
                 return CommandResult.SUCCESS;
@@ -41,6 +42,7 @@ namespace TradeCommander.CommandHandlers
                 _console.WriteLine("Commands available");
                 _console.WriteLine("LOGIN: Logs an existing user into the SpaceTraders API.");
                 _console.WriteLine("SIGNUP: Creates an account for the SpaceTraders API.");
+                _console.WriteLine("SETTINGS: Provides functions for changing the client settings.");
                 _console.WriteLine("CLEAR: Clears the screen.");
                 return CommandResult.SUCCESS;
             }

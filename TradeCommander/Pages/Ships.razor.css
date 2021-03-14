@@ -1,6 +1,7 @@
 ﻿.layout-container {
-  padding-left: 20px; }
+  padding-right: 20px; }
   .layout-container .ships {
-    width: 100%; }
+    width: 100%;
+    padding-bottom: 20px; }
     .layout-container .ships th {
       text-align: left; }

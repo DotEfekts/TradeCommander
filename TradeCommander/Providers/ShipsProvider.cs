@@ -1,4 +1,5 @@
 ﻿using Blazored.LocalStorage;
+using Microsoft.AspNetCore.Components;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -18,8 +19,13 @@ namespace TradeCommander.Providers
         private readonly HttpClient _http;
         private readonly JsonSerializerOptions _serializerOptions;
         private Dictionary<string, ShipData> _shipData;
-        
+
+        private string _appBase;
+        private string[] _shipNames;
+        private Random _rand;
+
         public bool DataRefreshing { get; private set; } = true;
+
         public event EventHandler<ShipEventArgs> FlightsUpdated;
         public event EventHandler<ShipEventArgs> ShipsUpdated;
 
@@ -31,7 +37,8 @@ namespace TradeCommander.Providers
             ISyncLocalStorageService localStorage,
             UserProvider userProvider,
             HttpClient http,
-            JsonSerializerOptions serializerOptions
+            JsonSerializerOptions serializerOptions,
+            NavigationManager navManager
             )
         {
             _localStorage = localStorage;
@@ -39,8 +46,12 @@ namespace TradeCommander.Providers
             _http = http;
             _serializerOptions = serializerOptions;
 
-            _userProvider.UserUpdated += HandleUserUpdate;
+            _appBase = navManager.BaseUri;
+            _rand = new Random();
 
+            _userProvider.UserUpdated += HandleUserUpdate;
+            
+            LoadShipNames();
             StartFlightPlanUpdater();
         }
 
@@ -209,6 +220,41 @@ namespace TradeCommander.Providers
             }
         }
 
+        private async void LoadShipNames()
+        {
+            var request = new HttpRequestMessage
+            {
+                RequestUri = new Uri(_appBase + "/ship-names.json"),
+                Method = HttpMethod.Get
+            };
+
+            var httpResponse = await _http.SendAsync(request);
+            _shipNames = await httpResponse.Content.ReadFromJsonAsync<string[]>(_serializerOptions);
+
+            if (HasShips())
+            {
+                AssignShipNames();
+                SaveShipData();
+            }
+        }
+
+        private void AssignShipNames()
+        {
+            if(_shipData != null && _shipNames != null)
+                foreach(var ship in _shipData.Values)
+                {
+                    if(ship.DisplayName == ship.ServerId)
+                    {
+                        string name = "";
+                        do
+                        {
+                            name = _shipNames[_rand.Next(_shipNames.Length)];
+                        } while (_shipData.Values.Any(s => s.DisplayName == name));
+                        ship.DisplayName = name;
+                    }
+                }
+        }
+
         private async void HandleUserUpdate(object sender, UserEventArgs eventArgs)
         {
             await RefreshShipData();
@@ -277,6 +323,7 @@ namespace TradeCommander.Providers
 
                 _shipData = newShipData;
 
+                AssignShipNames();
                 SaveShipData();
             }
             else

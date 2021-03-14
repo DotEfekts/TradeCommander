@@ -9,17 +9,17 @@ using System.Timers;
 
 namespace TradeCommander
 {
-    public class RateLimitedHttpClient : HttpClient
+    public class RateLimitedHandler : HttpClientHandler
     {
-        private readonly SemaphoreSlim RequestLimiter;
+        private readonly SemaphoreSlim _requestLimiter;
         private readonly int _requestLimit;
 
         private const int RELEASE_INTERVAL = 1000;
-        public RateLimitedHttpClient(int requestLimitPerSecond)
+
+        public RateLimitedHandler(int requestLimitPerSecond) : base()
         {
             _requestLimit = requestLimitPerSecond;
-            RequestLimiter = new SemaphoreSlim(requestLimitPerSecond);
-            Console.Write(requestLimitPerSecond);
+            _requestLimiter = new SemaphoreSlim(requestLimitPerSecond);
 
             StartLimitReleaser();
         }
@@ -33,16 +33,18 @@ namespace TradeCommander
 
         private void ReleaseRequest(object sender, ElapsedEventArgs args)
         {
-            RequestLimiter.Release();
+            _requestLimiter.Release();
         }
 
-        public override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
-            await RequestLimiter.WaitAsync(cancellationToken);
-            var result = await base.SendAsync(request, cancellationToken);
-            if (result.StatusCode == HttpStatusCode.TooManyRequests)
+            await _requestLimiter.WaitAsync(cancellationToken);
+            var response = await base.SendAsync(request, cancellationToken);
+
+            if (response.StatusCode == HttpStatusCode.TooManyRequests)
                 return await SendAsync(request, cancellationToken);
-            return result;
+
+            return response;
         }
     }
 }

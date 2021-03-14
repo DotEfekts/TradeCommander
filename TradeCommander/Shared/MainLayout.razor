@@ -8,6 +8,7 @@
 @inject CommandManager Commands
 @inject IJSRuntime JS
 @inject ISyncLocalStorageService LocalStorage
+@inject SettingsProvider SettingsProvider
 
 
 @if (!gameOffline.HasValue || (!gameOffline.Value && !UserProvider.StartingDetailsChecked))
@@ -83,13 +84,14 @@ else
         try
         {
             var result = await Http.GetAsync("/game/status");
-            gameOffline = result.StatusCode != System.Net.HttpStatusCode.OK;
+            gameOffline = !result.IsSuccessStatusCode;
         }
         catch (Exception) { gameOffline = true; }
         finally { StateHasChanged(); }
 
         Console.OutputUpdated += OutputUpdated;
         UserProvider.UserUpdated += UserUpdated;
+        SettingsProvider.SettingsUpdated += SettingsUpdated;
 
         base.OnInitialized();
     }
@@ -98,6 +100,7 @@ else
     {
         Console.OutputUpdated -= OutputUpdated;
         UserProvider.UserUpdated -= UserUpdated;
+        SettingsProvider.SettingsUpdated -= SettingsUpdated;
     }
 
     private void OutputUpdated(object sender, string type)
@@ -210,5 +213,34 @@ else
             } while (commandQueue.Any());
             queueRunning = false;
         }
+    }
+
+    private async void SettingsUpdated(object sender, SettingsEventArgs eventArgs)
+    {
+        var contentColour = eventArgs.Settings.FirstOrDefault(s => s.Key == "content-colour");
+        if (contentColour != null)
+        {
+            if (!await JS.InvokeAsync<bool>("setCssVar", "--content-color", contentColour.Value))
+                Console.WriteLine("Warning: content-colour setting \"" + contentColour.Value + "\" is invalid. Ignoring.");
+        }
+        else
+            await JS.InvokeVoidAsync("setCssVar", "--content-color", null);
+
+        var backgroundColour = eventArgs.Settings.FirstOrDefault(s => s.Key == "background-colour");
+        if (backgroundColour != null)
+        {
+            if (!await JS.InvokeAsync<bool>("setCssVar", "--background-color", backgroundColour.Value))
+                Console.WriteLine("Warning: background-colour setting \"" + backgroundColour.Value + "\" is invalid. Ignoring.");
+        }
+        else
+            await JS.InvokeVoidAsync("setCssVar", "--background-color", null);
+
+        var crtEffect = eventArgs.Settings.FirstOrDefault(s => s.Key == "crt-effect");
+        if (crtEffect != null && crtEffect.Value == "off")
+            await JS.InvokeVoidAsync("setBodyClass", null);
+        else
+            await JS.InvokeVoidAsync("setBodyClass", "crt");
+
+        StateHasChanged();
     }
 }

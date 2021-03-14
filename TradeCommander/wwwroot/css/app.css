@@ -1,12 +1,32 @@
 ﻿@import url("https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap");
+:root {
+  --background-color: #030303;
+  --content-color: lime; }
+
 * {
   box-sizing: border-box; }
 
+/* width */
+::-webkit-scrollbar {
+  width: 5px; }
+
+/* Track */
+::-webkit-scrollbar-track {
+  background: transparent; }
+
+/* Handle */
+::-webkit-scrollbar-thumb {
+  background: var(--content-color); }
+
+/* Handle on hover */
+::-webkit-scrollbar-thumb:hover {
+  background: var(--content-color); }
+
 html, body {
-  background-color: #030303;
+  background-color: var(--background-color);
   font-family: 'Share Tech Mono', monospace;
   font-size: 18px;
-  color: lime;
+  color: var(--content-color);
   height: 100%;
   padding: 0;
   margin: 0; }
@@ -18,15 +38,14 @@ body {
   overflow: hidden; }
 
 #app {
-  height: 100%;
-  filter: drop-shadow(0 0 1px lime); }
+  height: 100%; }
   @media (min-width: 200vh) {
     #app {
       width: calc(100% + 4px);
       margin-left: -2px; }
       #app {
-        border-left: 2px solid lime;
-        border-right: 2px solid lime; } }
+        border-left: 2px solid var(--content-color);
+        border-right: 2px solid var(--content-color); } }
   #app .loading {
     height: 100%;
     width: 100%;
@@ -37,7 +56,7 @@ body {
     justify-content: center; }
     #app .loading img {
       height: 150px;
-      filter: opacity(0.1) drop-shadow(0 0 0px lime) drop-shadow(0 0 0px lime) drop-shadow(0 0 0px lime) drop-shadow(0 0 0px lime); }
+      filter: opacity(0.1) drop-shadow(0 0 0px var(--content-color)) drop-shadow(0 0 0px var(--content-color)) drop-shadow(0 0 0px var(--content-color)) drop-shadow(0 0 0px var(--content-color)); }
     #app .loading .title {
       display: flex;
       flex-direction: column;
@@ -57,6 +76,9 @@ body {
 
 #app > .loading {
   margin-left: 20px; }
+
+.crt #app {
+  filter: drop-shadow(0 0 1px var(--content-color)); }
 
 .crt::before {
   content: " ";
@@ -94,7 +116,7 @@ body {
   height: 100%; }
   #blazor-error-ui .content {
     display: inline-block;
-    background: #030303;
+    background: var(--background-color);
     padding: 25px;
     padding-top: 45px;
     position: relative;
@@ -102,13 +124,13 @@ body {
     left: 50%;
     transform: translate(-50%, -50%);
     z-index: 1000;
-    border: solid 1px lime;
-    box-shadow: 0 0 2px lime;
+    border: solid 1px var(--content-color);
+    box-shadow: 0 0 2px var(--content-color);
     text-align: center; }
     #blazor-error-ui .content div {
       margin-bottom: 20px; }
     #blazor-error-ui .content a {
-      color: lime;
+      color: var(--content-color);
       font-weight: 600; }
     #blazor-error-ui .content .dismiss {
       cursor: pointer;

@@ -12,6 +12,8 @@ namespace TradeCommander
 {
     public class Program
     {
+        private const int REQUESTS_PER_SECOND = 2;
+
         public static async Task Main(string[] args)
         {
             var builder = WebAssemblyHostBuilder.CreateDefault(args);
@@ -22,13 +24,16 @@ namespace TradeCommander
                 PropertyNameCaseInsensitive = true
             });
 
-            builder.Services.AddScoped<HttpClient>(sp => new RateLimitedHttpClient(2) { BaseAddress = new Uri(builder.Configuration["base_url"]) });
+            builder.Services.AddScoped(sp => new HttpClient(new RateLimitedHandler(REQUESTS_PER_SECOND)) { 
+                BaseAddress = new Uri(builder.Configuration["base_url"]) });
+
             builder.Services.AddBlazoredLocalStorage(options =>
             {
                 options.JsonSerializerOptions.DictionaryKeyPolicy = null;
             });
 
             builder.Services.AddScoped<StateProvider>();
+            builder.Services.AddScoped<SettingsProvider>();
 
             builder.Services.AddScoped<ConsoleOutput>();
             builder.Services.AddScoped<UserProvider>();

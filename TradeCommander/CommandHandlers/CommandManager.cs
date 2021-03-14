@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using TradeCommander.Providers;
 
@@ -16,6 +17,9 @@ namespace TradeCommander.CommandHandlers
         private readonly Dictionary<string, ICommandHandler> _handlers;
         private readonly Dictionary<string, ICommandHandlerAsync> _asyncHandlers;
 
+        private readonly Regex _commandMatcher;
+        private readonly Regex _stringEndTest;
+
         public CommandManager(ConsoleOutput console, UserProvider userInfo, IServiceProvider services)
         {
             _console = console;
@@ -23,6 +27,9 @@ namespace TradeCommander.CommandHandlers
             _services = services;
             _handlers = new Dictionary<string, ICommandHandler>();
             _asyncHandlers = new Dictionary<string, ICommandHandlerAsync>();
+
+            _commandMatcher = new Regex(@"([\""].*?[\""]|\\ |[^ \r\n])+", RegexOptions.Compiled);
+            _stringEndTest = new Regex(@"\\ \s*$", RegexOptions.Compiled);
         }
 
         public void RegisterCommands()
@@ -113,12 +120,41 @@ namespace TradeCommander.CommandHandlers
         {
             if (string.IsNullOrWhiteSpace(command))
                 return CommandResult.SUCCESS;
+            
+            command = command
+                // Replace escaped quotes with NUL character
+                .Replace("\\\"", "\0");
 
-            var args = command.Split(' ')
-                .Where(t => !string.IsNullOrWhiteSpace(t)).Select(t => t.Trim()).ToArray();
-            var commandName = args[0].ToUpper();
-            var newArgs = new string[args.Length - 1];
-            Array.Copy(args, 1, newArgs, 0, args.Length - 1);
+            if(command.Count(c => c == '"') % 2 == 1)
+            {
+                _console.WriteLine("Command contains unterminated quoted string.");
+                return CommandResult.INVALID;
+            }
+
+
+            var matches = _commandMatcher.Matches(command);
+            var argStrings = new List<string>();
+            foreach (Match match in matches)
+                if (match.Success & !string.IsNullOrWhiteSpace(match.Value))
+                {
+                    var endSpace = _stringEndTest.Match(match.Value).Success;
+                    var cleanedString = match.Value.Trim()
+                        // Strip non-escaped quotes
+                        .Replace("\"", "")
+                        // Reinsert escaped quotes
+                        .Replace("\0", "\"")
+                        // Replace escaped spaces
+                        .Replace("\\ ", " ");
+
+                    if (endSpace)
+                        cleanedString += " ";
+
+                    argStrings.Add(cleanedString);
+                }
+
+            var commandName = argStrings.First().ToUpper();
+            var args = new string[argStrings.Count - 1];
+            Array.Copy(argStrings.ToArray(), 1, args, 0, argStrings.Count - 1);
 
             CommandResult result;
             if (_handlers.ContainsKey(commandName))
@@ -136,7 +172,7 @@ namespace TradeCommander.CommandHandlers
                     return CommandResult.FAILURE;
                 }
 
-                result = handler.HandleCommand(newArgs, background, _userInfo.UserDetails != null);
+                result = handler.HandleCommand(args, background, _userInfo.UserDetails != null);
             }
             else if (_asyncHandlers.ContainsKey(commandName.ToUpper()))
             {
@@ -153,7 +189,7 @@ namespace TradeCommander.CommandHandlers
                     return CommandResult.FAILURE;
                 }
 
-                result = await handler.HandleCommandAsync(newArgs, background, _userInfo.UserDetails != null);
+                result = await handler.HandleCommandAsync(args, background, _userInfo.UserDetails != null);
             }
             else
             {

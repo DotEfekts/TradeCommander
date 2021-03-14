@@ -34,7 +34,7 @@ namespace TradeCommander.CommandHandlers
 
         public CommandResult HandleCommand(string[] args, bool background, bool loggedIn)
         {
-            if (args.Length == 0 && (args[0] == "?" || args[0].ToLower() == "help"))
+            if (args.Length == 1 && (args[0] == "?" || args[0].ToLower() == "help"))
             {
                 _console.WriteLine("AUTO: Provides functions for automatic routes.");
                 _console.WriteLine("Subcommands");
