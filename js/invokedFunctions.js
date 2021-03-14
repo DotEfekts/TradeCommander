@@ -17,6 +17,25 @@ function getInputVal() {
     return input.value;
 }
 
+function setCssVar(name, value) {
+    if(!value || isValidColor(value))
+        document.documentElement.style.setProperty(name, value);
+    else
+        document.documentElement.style.setProperty(name, null);
+
+    return !value || isValidColor(value);
+}
+
+function setBodyClass(className) {
+    document.body.className = className;
+}
+
+function isValidColor(strColor) {
+    var s = new Option().style;
+    s.color = strColor;
+    return s.color.startsWith("rgb(") || s.color.startsWith("rgba(") || s.color === strColor.toLowerCase();
+}
+
 function renderMap(locations, width, height, shipData, shipFocus, locationSymbol, flightPlans) {
     const scale = 5;
     const zoom = shipFocus ? 2.5 : 1;
@@ -61,8 +80,9 @@ function renderMap(locations, width, height, shipData, shipFocus, locationSymbol
             }
         }
 
-        ctx.strokeStyle = 'lime';
-        ctx.fillStyle = 'lime';
+        var colour = getComputedStyle(document.documentElement).getPropertyValue('--content-color');
+        ctx.strokeStyle = colour
+        ctx.fillStyle = colour;
         ctx.lineWidth = 1;
 
         let fontSize = 18 * (zoom === 1 ? 1 : 1.5)

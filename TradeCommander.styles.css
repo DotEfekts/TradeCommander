@@ -68,9 +68,10 @@
       text-align: left; }
 /* /Pages/Ships.razor.rz.scp.css */
 .layout-container[b-obu1hjmg1n] {
-  padding-left: 20px; }
+  padding-right: 20px; }
   .layout-container .ships[b-obu1hjmg1n] {
-    width: 100%; }
+    width: 100%;
+    padding-bottom: 20px; }
     .layout-container .ships th[b-obu1hjmg1n] {
       text-align: left; }
 /* /Pages/Shipyard.razor.rz.scp.css */
@@ -111,20 +112,21 @@
     width: 50%;
     display: flex;
     flex-direction: column;
-    border-right: 2px solid lime; }
+    border-right: 2px solid var(--content-color); }
     .page .info .info-bar[b-yw6ekk3t2y] {
       width: 100%;
       padding: 5px 20px;
-      border-bottom: 2px solid lime; }
+      border-bottom: 2px solid var(--content-color); }
       .page .info .info-bar .right[b-yw6ekk3t2y] {
         float: right; }
     .page .info .ships[b-yw6ekk3t2y] {
-      flex: 1;
-      border-bottom: 2px solid lime;
+      border-bottom: 2px solid var(--content-color);
       padding-left: 20px;
-      padding-right: 5px; }
+      padding-right: 5px;
+      overflow-y: auto; }
     .page .info .console[b-yw6ekk3t2y] {
       flex: 1;
+      min-height: 30%;
       display: flex;
       flex-direction: column;
       padding-left: 20px;
@@ -134,19 +136,14 @@
         position: relative; }
         .page .info .console .output .console-text[b-yw6ekk3t2y] {
           position: absolute;
-          bottom: 0;
-          max-height: 100%;
+          bottom: calc(-1em - 20px);
+          max-height: calc(100% + calc(1em + 20px));
           width: 100%;
           margin: 0;
           padding-right: 5px;
+          padding-bottom: calc(1em + 20px);
           overflow-y: auto;
-          white-space: pre-wrap;
-          -ms-overflow-style: none;
-          /* IE and Edge */
-          scrollbar-width: none;
-          /* Firefox */ }
-          .page .info .console .output .console-text[b-yw6ekk3t2y]::-webkit-scrollbar {
-            display: none; }
+          white-space: pre-wrap; }
       .page .info .console .command-input[b-yw6ekk3t2y] {
         display: flex;
         align-items: center;
@@ -164,4 +161,4 @@
           border: none;
           background-color: transparent;
           font-family: 'Share Tech Mono', monospace;
-          color: lime; }
+          color: var(--content-color); }
