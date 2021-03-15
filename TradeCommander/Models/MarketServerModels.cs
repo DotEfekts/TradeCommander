@@ -36,10 +36,18 @@ namespace TradeCommander.Models
         public int Quantity { get; set; }
     }
 
-    public class TransactionResult 
+    public class PurchaseResult 
     { 
         public int Credits { get; set; }
         public Order Order { get; set; }
+        public Ship Ship { get; set; }
+
+    }
+
+    public class SaleResult
+    {
+        public int Credits { get; set; }
+        public Order[] Order { get; set; }
         public Ship Ship { get; set; }
 
     }

@@ -162,7 +162,7 @@ namespace TradeCommander.CommandHandlers
 
                                                 if (httpResult.StatusCode == HttpStatusCode.Created)
                                                 {
-                                                    var purchaseResult = await httpResult.Content.ReadFromJsonAsync<TransactionResult>(_serializerOptions);
+                                                    var purchaseResult = await httpResult.Content.ReadFromJsonAsync<PurchaseResult>(_serializerOptions);
 
                                                     _userInfo.UserDetails.Credits = purchaseResult.Credits;
 
@@ -268,7 +268,7 @@ namespace TradeCommander.CommandHandlers
 
                                 if (httpResult.StatusCode == HttpStatusCode.Created)
                                 {
-                                    var saleResult = await httpResult.Content.ReadFromJsonAsync<TransactionResult>(_serializerOptions);
+                                    var saleResult = await httpResult.Content.ReadFromJsonAsync<SaleResult>(_serializerOptions);
                                     _userInfo.UserDetails.Credits = saleResult.Credits;
 
                                     _shipInfo.UpdateShipCargo(saleResult.Ship.Id, saleResult.Ship.Cargo);
@@ -276,7 +276,7 @@ namespace TradeCommander.CommandHandlers
                                     if (!background)
                                     {
                                         _navManager.NavigateTo(_navManager.BaseUri + "ships/cargo/" + shipData.ServerId);
-                                        _console.WriteLine(quantity + " units of cargo sold successfully. Total made: " + saleResult.Order.Total + " credits.");
+                                        _console.WriteLine(quantity + " units of cargo sold successfully. Total made: " + saleResult.Order.Sum(o => o.Total) + " credits.");
                                     }
 
                                     return CommandResult.SUCCESS;
