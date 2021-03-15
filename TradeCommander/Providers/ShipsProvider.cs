@@ -183,6 +183,7 @@ namespace TradeCommander.Providers
         private async void UpdateFlightPlans(object sender, ElapsedEventArgs args)
         {
             var flightsEnded = false;
+            var saveData = true;
             if(_shipData != null)
             {
                 foreach (var ship in _shipData.Values)
@@ -202,13 +203,15 @@ namespace TradeCommander.Providers
                             {
                                 flightsEnded = true;
                                 ship.FlightEnded = true;
-
-                                if(!DataRefreshing)
-                                    SaveShipData();
                             }
+
+                            saveData = true;
                         }
                     }
                 }
+
+                if(saveData)
+                    SaveShipData();
 
                 if (flightsEnded && !DataRefreshing)
                     await RefreshShipData();

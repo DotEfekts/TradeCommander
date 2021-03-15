@@ -82,9 +82,9 @@ namespace TradeCommander.CommandHandlers
                 if (httpResult.StatusCode == HttpStatusCode.Created)
                 {
                     var details = await httpResult.Content.ReadFromJsonAsync<DetailsResponse>(_serializerOptions);
-
                     var credits = details.User.Credits - _userInfo.UserDetails.Credits;
-                    _userInfo.UserDetails.Credits = details.User.Credits;
+
+                    _userInfo.SetCredits(details.User.Credits);
                     _console.WriteLine("Loan taken successfully. Loan amount: " + credits + " credits.");
 
                     return CommandResult.SUCCESS;
@@ -107,9 +107,9 @@ namespace TradeCommander.CommandHandlers
                 if (httpResult.StatusCode == HttpStatusCode.OK)
                 {
                     var details = await httpResult.Content.ReadFromJsonAsync<DetailsResponse>(_serializerOptions);
-
                     var payment = _userInfo.UserDetails.Credits - details.User.Credits;
-                    _userInfo.UserDetails.Credits = details.User.Credits;
+
+                    _userInfo.SetCredits(details.User.Credits);
                     _console.WriteLine("Loan paid successfully. Payment amount: " + payment + " credits.");
 
                     return CommandResult.SUCCESS;

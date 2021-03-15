@@ -42,6 +42,18 @@ namespace TradeCommander.Providers
                 StartingDetailsChecked = true;
         }
 
+        public void SetCredits(int credits)
+        {
+            UserDetails.Credits = credits;
+
+            UserUpdated?.Invoke(this, new UserEventArgs
+            {
+                UserDetails = UserDetails,
+                IsFullRefresh = false,
+                IsInitialCheck = false
+            });
+        }
+
         public async Task<bool> SetDetailsAsync(string username, string token)
         {
             var initialCheck = !StartingDetailsChecked;

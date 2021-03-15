@@ -79,10 +79,11 @@ namespace TradeCommander.CommandHandlers
                 if (httpResult.StatusCode == HttpStatusCode.Created)
                 {
                     var details = await httpResult.Content.ReadFromJsonAsync<DetailsResponse>(_serializerOptions);
-
                     var cost = _userInfo.UserDetails.Credits - details.User.Credits;
-                    _userInfo.UserDetails.Credits = details.User.Credits;
+
+                    _userInfo.SetCredits(details.User.Credits);
                     _console.WriteLine("Ship purchased successfully. Total cost: " + cost + " credits.");
+
                     return CommandResult.SUCCESS;
                 }
                 else

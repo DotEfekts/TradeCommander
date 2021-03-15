@@ -139,9 +139,9 @@ namespace TradeCommander.CommandHandlers
                                         if (quantityType == QuantityType.MAX && quantity * good.PricePerUnit > _userInfo.UserDetails.Credits)
                                             quantity = _userInfo.UserDetails.Credits / good.PricePerUnit;
 
-                                        if (quantity > 0)
+                                        if (quantity > 0 || quantityType == QuantityType.MAX)
                                         {
-                                            if (quantity * good.PricePerUnit <= _userInfo.UserDetails.Credits)
+                                            if (quantity > 0 && quantity * good.PricePerUnit <= _userInfo.UserDetails.Credits)
                                             {
                                                 if (!background)
                                                 {
@@ -164,9 +164,9 @@ namespace TradeCommander.CommandHandlers
                                                 {
                                                     var purchaseResult = await httpResult.Content.ReadFromJsonAsync<PurchaseResult>(_serializerOptions);
 
-                                                    _userInfo.UserDetails.Credits = purchaseResult.Credits;
-
+                                                    _userInfo.SetCredits(purchaseResult.Credits);
                                                     _shipInfo.UpdateShipCargo(purchaseResult.Ship.Id, purchaseResult.Ship.Cargo);
+
                                                     if (!background)
                                                     {
                                                         _navManager.NavigateTo(_navManager.BaseUri + "ships/cargo/" + shipData.ServerId);
@@ -269,8 +269,8 @@ namespace TradeCommander.CommandHandlers
                                 if (httpResult.StatusCode == HttpStatusCode.Created)
                                 {
                                     var saleResult = await httpResult.Content.ReadFromJsonAsync<SaleResult>(_serializerOptions);
-                                    _userInfo.UserDetails.Credits = saleResult.Credits;
 
+                                    _userInfo.SetCredits(saleResult.Credits);
                                     _shipInfo.UpdateShipCargo(saleResult.Ship.Id, saleResult.Ship.Cargo);
 
                                     if (!background)
