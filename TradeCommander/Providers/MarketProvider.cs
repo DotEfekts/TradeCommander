@@ -97,28 +97,35 @@ namespace TradeCommander.Providers
 
         public async Task<MarketResponse> RefreshMarketData(string symbol, bool chainedUpdate)
         {
-            var response = await _http.GetFromJsonAsync<MarketResponse>("/game/locations/" + symbol.ToUpper() + "/marketplace", _serializerOptions);
-            if (_marketData != null && response != null)
+            try
             {
-                _marketData[response.Location.Symbol.ToUpper()] = new Market
+                var response = await _http.GetFromJsonAsync<MarketResponse>("/game/locations/" + symbol.ToUpper() + "/marketplace", _serializerOptions);
+                if (_marketData != null && response != null)
                 {
-                    Symbol = response.Location.Symbol.ToUpper(),
-                    RetrievedAt = DateTimeOffset.UtcNow,
-                    Marketplace = response.Location.Marketplace
-                };
-
-                if (!chainedUpdate)
-                {
-                    SaveMarketData();
-
-                    MarketsUpdated?.Invoke(this, new MarketEventArgs
+                    _marketData[response.Location.Symbol.ToUpper()] = new Market
                     {
-                        Markets = _marketData.Values.ToArray()
-                    });
-                }
-            }
+                        Symbol = response.Location.Symbol.ToUpper(),
+                        RetrievedAt = DateTimeOffset.UtcNow,
+                        Marketplace = response.Location.Marketplace
+                    };
 
-            return response;
+                    if (!chainedUpdate)
+                    {
+                        SaveMarketData();
+
+                        MarketsUpdated?.Invoke(this, new MarketEventArgs
+                        {
+                            Markets = _marketData.Values.ToArray()
+                        });
+                    }
+                }
+
+                return response;
+            }
+            catch (Exception)
+            {
+                return null;
+            }
         }
 
         private void SaveMarketData()
