@@ -82,7 +82,8 @@ namespace TradeCommander.Providers
             {
                 var locations = _shipProvider.GetShipData().Select(t => t.Ship.Location).Distinct().Where(t => !string.IsNullOrWhiteSpace(t)).ToArray();
                 foreach (var location in locations)
-                    await RefreshMarketData(location, true);
+                    if(_marketData.ContainsKey(location.ToUpper()) && _marketData[location.ToUpper()].RetrievedAt.AddMinutes(1) < DateTimeOffset.UtcNow)
+                        await RefreshMarketData(location, true);
 
                 SaveMarketData();
 

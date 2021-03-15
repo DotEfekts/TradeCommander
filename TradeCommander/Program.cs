@@ -32,6 +32,8 @@ namespace TradeCommander
                 options.JsonSerializerOptions.DictionaryKeyPolicy = null;
             });
 
+            builder.Services.AddSentry(builder.Configuration["sentry_dsn"]);
+
             builder.Services.AddScoped<StateProvider>();
             builder.Services.AddScoped<SettingsProvider>();
 
