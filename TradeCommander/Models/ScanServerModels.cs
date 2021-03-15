@@ -18,7 +18,7 @@ namespace TradeCommander.Models
 
     public class LocationResponse
     {
-        public Location Planet { get; set; }
+        public Location Location { get; set; }
     }
 
     public class SpaceSystem

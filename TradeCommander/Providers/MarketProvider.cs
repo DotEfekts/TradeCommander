@@ -99,11 +99,11 @@ namespace TradeCommander.Providers
             var response = await _http.GetFromJsonAsync<MarketResponse>("/game/locations/" + symbol.ToUpper() + "/marketplace", _serializerOptions);
             if (_marketData != null && response != null)
             {
-                _marketData[response.Planet.Symbol.ToUpper()] = new Market
+                _marketData[response.Location.Symbol.ToUpper()] = new Market
                 {
-                    Symbol = response.Planet.Symbol.ToUpper(),
+                    Symbol = response.Location.Symbol.ToUpper(),
                     RetrievedAt = DateTimeOffset.UtcNow,
-                    Marketplace = response.Planet.Marketplace
+                    Marketplace = response.Location.Marketplace
                 };
 
                 if (!chainedUpdate)

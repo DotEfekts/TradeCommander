@@ -73,15 +73,15 @@ namespace TradeCommander.CommandHandlers
                 try
                 {
                     var locationInfo = await _http.GetFromJsonAsync<LocationResponse>("/game/locations/" + args[1].ToUpper(), _serializerOptions);
-                    await _console.WriteLine("Symbol: " + locationInfo.Planet.Symbol, 0);
-                    await _console.WriteLine("Type: " + locationInfo.Planet.Type, 100);
-                    await _console.WriteLine("Name: " + locationInfo.Planet.Name, 100);
-                    if(locationInfo.Planet.AnsibleProgress.HasValue)
-                        await _console.WriteLine("Ansible Progress: " + locationInfo.Planet.AnsibleProgress, 100);
-                    if (!string.IsNullOrEmpty(locationInfo.Planet.Anomaly))
-                        await _console.WriteLine("Anomaly Data: " + locationInfo.Planet.Anomaly, 100);
-                    await _console.WriteLine("X: " + locationInfo.Planet.X, 100);
-                    await _console.WriteLine("Y: " + locationInfo.Planet.Y, 100);
+                    await _console.WriteLine("Symbol: " + locationInfo.Location.Symbol, 0);
+                    await _console.WriteLine("Type: " + locationInfo.Location.Type, 100);
+                    await _console.WriteLine("Name: " + locationInfo.Location.Name, 100);
+                    if(locationInfo.Location.AnsibleProgress.HasValue)
+                        await _console.WriteLine("Ansible Progress: " + locationInfo.Location.AnsibleProgress, 100);
+                    if (!string.IsNullOrEmpty(locationInfo.Location.Anomaly))
+                        await _console.WriteLine("Anomaly Data: " + locationInfo.Location.Anomaly, 100);
+                    await _console.WriteLine("X: " + locationInfo.Location.X, 100);
+                    await _console.WriteLine("Y: " + locationInfo.Location.Y, 100);
 
                     return CommandResult.SUCCESS;
                 }

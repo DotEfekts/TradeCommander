@@ -104,7 +104,7 @@ namespace TradeCommander.CommandHandlers
                             var response = await _marketInfo.RefreshMarketData(shipData.Ship.Location, false);
                             if (response != null)
                             {
-                                var market = response.Planet.Marketplace;
+                                var market = response.Location.Marketplace;
                                 var good = market.FirstOrDefault(t => t.Symbol == args[2].ToUpper());
 
                                 if (good != null)
@@ -170,7 +170,7 @@ namespace TradeCommander.CommandHandlers
                                                     if (!background)
                                                     {
                                                         _navManager.NavigateTo(_navManager.BaseUri + "ships/cargo/" + shipData.ServerId);
-                                                        _console.WriteLine(quantity + " units of cargo purchased successfully. Total cost: " + purchaseResult.Order.Sum(t => t.Total) + " credits.");
+                                                        _console.WriteLine(quantity + " units of cargo purchased successfully. Total cost: " + purchaseResult.Order.Total + " credits.");
                                                     }
 
                                                     return CommandResult.SUCCESS;
@@ -276,7 +276,7 @@ namespace TradeCommander.CommandHandlers
                                     if (!background)
                                     {
                                         _navManager.NavigateTo(_navManager.BaseUri + "ships/cargo/" + shipData.ServerId);
-                                        _console.WriteLine(quantity + " units of cargo sold successfully. Total made: " + saleResult.Order.Sum(t => t.Total) + " credits.");
+                                        _console.WriteLine(quantity + " units of cargo sold successfully. Total made: " + saleResult.Order.Total + " credits.");
                                     }
 
                                     return CommandResult.SUCCESS;

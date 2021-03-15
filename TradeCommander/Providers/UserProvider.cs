@@ -44,6 +44,8 @@ namespace TradeCommander.Providers
 
         public async Task<bool> SetDetailsAsync(string username, string token)
         {
+            var initialCheck = !StartingDetailsChecked;
+
             try
             {
                 var request = new HttpRequestMessage
@@ -67,7 +69,6 @@ namespace TradeCommander.Providers
                     _localStorage.SetItem("Token", Token);
                     _localStorage.SetItem("Username", Username);
 
-                    var initialCheck = !StartingDetailsChecked;
                     StartingDetailsChecked = true;
                     UserUpdated?.Invoke(this, new UserEventArgs
                     {
@@ -80,6 +81,14 @@ namespace TradeCommander.Providers
                 }
             }
             catch (Exception) { }
+
+            if(initialCheck)
+                UserUpdated?.Invoke(this, new UserEventArgs
+                {
+                    UserDetails = null,
+                    IsFullRefresh = true,
+                    IsInitialCheck = initialCheck
+                });
 
             StartingDetailsChecked = true;
             return false;

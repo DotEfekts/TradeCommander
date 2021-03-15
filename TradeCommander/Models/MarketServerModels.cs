@@ -8,7 +8,7 @@ namespace TradeCommander.Models
 {
     public class MarketResponse
     {
-        public MarketLocation Planet { get; set; }
+        public MarketLocation Location { get; set; }
     }
 
     public class MarketLocation
@@ -39,7 +39,7 @@ namespace TradeCommander.Models
     public class TransactionResult 
     { 
         public int Credits { get; set; }
-        public Order[] Order { get; set; }
+        public Order Order { get; set; }
         public Ship Ship { get; set; }
 
     }
