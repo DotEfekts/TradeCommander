@@ -139,7 +139,7 @@ namespace TradeCommander.CommandHandlers
                                         if (quantityType == QuantityType.MAX && quantity * good.PricePerUnit > _userInfo.UserDetails.Credits)
                                             quantity = _userInfo.UserDetails.Credits / good.PricePerUnit;
 
-                                        if (quantity > 0 || quantityType == QuantityType.MAX)
+                                        if (quantity > 0 || (quantityType == QuantityType.MAX && spaceLeft >= good.VolumePerUnit))
                                         {
                                             if(quantityType == QuantityType.TO_AMOUNT && quantity * good.PricePerUnit > _userInfo.UserDetails.Credits)
                                                 quantity = _userInfo.UserDetails.Credits / good.PricePerUnit;
