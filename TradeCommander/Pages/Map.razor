@@ -93,7 +93,7 @@
         {
             try
             {
-                if (systemSymbol != null && ships.Any(s => s.Ship.Location.StartsWith(systemSymbol + "-")))
+                if (systemSymbol != null && ships.Any(s => s.Ship.Location?.StartsWith(systemSymbol + "-") ?? s.LastFlightPlan.Destination?.StartsWith(systemSymbol + "-") ?? s.LastFlightPlan.Departure?.StartsWith(systemSymbol + "-") ?? false))
                 {
                     var systemFlightsResponse = await Http.GetFromJsonAsync<SystemFlightPlansResponse>("/game/systems/" + systemSymbol.ToUpper() + "/flight-plans", SerializerOptions);
 

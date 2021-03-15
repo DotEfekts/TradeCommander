@@ -325,7 +325,7 @@ namespace TradeCommander.Providers
 
                     if (ship.Value.LastFlightPlan != null)
                         ship.Value.LastFlightPlan.TimeRemainingInSeconds = (int)Math.Ceiling(ship.Value.LastFlightPlan.ArrivesAt.Subtract(timeNow).TotalSeconds);
-                    ship.Value.FlightEnded = ship.Value.LastFlightPlan == null || ship.Value.LastFlightPlan?.TimeRemainingInSeconds < 0;
+                    ship.Value.FlightEnded = ship.Value.Ship.Location != null || ship.Value.LastFlightPlan == null || ship.Value.LastFlightPlan?.TimeRemainingInSeconds < 0;
                 }
 
                 _shipData = newShipData;
