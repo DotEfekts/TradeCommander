@@ -38,7 +38,7 @@ function isValidColor(strColor) {
 
 function renderMap(locations, width, height, shipData, shipFocus, locationSymbol, flightPlans) {
     const scale = 5;
-    const zoom = shipFocus ? 2.5 : 1;
+    let zoom = 1;
 
     const canvas = document.getElementById('map');
     canvas.width = width * scale;
@@ -52,12 +52,14 @@ function renderMap(locations, width, height, shipData, shipFocus, locationSymbol
         let xTranslate = canvas.width / 2;
         let yTranslate = canvas.height / 2;
 
-        if (zoom > 1) {
+        if (shipFocus) {
             if (shipFocus.lastFlightPlan && shipFocus.flightEnded === false) {
                 let flightPlanStart = locations.find(l => l.symbol === shipFocus.lastFlightPlan.departure);
                 let flightPlanEnd = locations.find(l => l.symbol === shipFocus.lastFlightPlan.destination);
 
                 if (flightPlanStart && flightPlanEnd) {
+                    zoom = 2.5;
+
                     let x1 = flightPlanStart.x;
                     let y1 = -flightPlanStart.y;
                     let x2 = flightPlanEnd.x;
