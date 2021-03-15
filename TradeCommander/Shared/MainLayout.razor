@@ -164,7 +164,7 @@ else
                 historyCommand = commandHistory[historyIndex];
             historyIndex = -1;
 
-            if (command != historyCommand && !string.IsNullOrWhiteSpace(command) && UserProvider.Username != null)
+            if ((commandHistory.Count == 0 || command != commandHistory[0]) && !string.IsNullOrWhiteSpace(command) && UserProvider.Username != null)
             {
 
                 commandHistory.Insert(0, command);
