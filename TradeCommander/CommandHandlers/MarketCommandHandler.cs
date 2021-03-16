@@ -165,7 +165,7 @@ namespace TradeCommander.CommandHandlers
 
                                                 if (httpResult.StatusCode == HttpStatusCode.Created)
                                                 {
-                                                    var purchaseResult = await httpResult.Content.ReadFromJsonAsync<PurchaseResult>(_serializerOptions);
+                                                    var purchaseResult = await httpResult.Content.ReadFromJsonAsync<TransactionResult>(_serializerOptions);
 
                                                     _userInfo.SetCredits(purchaseResult.Credits);
                                                     _shipInfo.UpdateShipCargo(purchaseResult.Ship.Id, purchaseResult.Ship.Cargo);
@@ -271,7 +271,7 @@ namespace TradeCommander.CommandHandlers
 
                                 if (httpResult.StatusCode == HttpStatusCode.Created)
                                 {
-                                    var saleResult = await httpResult.Content.ReadFromJsonAsync<SaleResult>(_serializerOptions);
+                                    var saleResult = await httpResult.Content.ReadFromJsonAsync<TransactionResult>(_serializerOptions);
 
                                     _userInfo.SetCredits(saleResult.Credits);
                                     _shipInfo.UpdateShipCargo(saleResult.Ship.Id, saleResult.Ship.Cargo);
@@ -279,7 +279,7 @@ namespace TradeCommander.CommandHandlers
                                     if (!background)
                                     {
                                         _navManager.NavigateTo(_navManager.BaseUri + "ships/cargo/" + shipData.ServerId);
-                                        _console.WriteLine(quantity + " units of cargo sold successfully. Total made: " + saleResult.Order.Sum(o => o.Total) + " credits.");
+                                        _console.WriteLine(quantity + " units of cargo sold successfully. Total made: " + saleResult.Order.Total + " credits.");
                                     }
 
                                     return CommandResult.SUCCESS;
