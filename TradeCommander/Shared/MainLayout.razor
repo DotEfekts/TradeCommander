@@ -46,9 +46,9 @@ else
                 <div class="ships"><TradeCommander.Pages.Ships></TradeCommander.Pages.Ships></div>
             }
             <div class="console">
-                <div class="output" id="console">
+                <div class="output" id="console" @ref="consoleOutputElement">
                     <div class="text-container">
-                        <p class="console-text" @ref="consoleOutputElement">@Console.Output</p>
+                        <p class="console-text">@Console.Output</p>
                     </div>
                 </div>
                 <div class="command-input">
