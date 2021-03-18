@@ -161,7 +161,10 @@ namespace TradeCommander.CommandHandlers
                         {
                             var error = await httpResult.Content.ReadFromJsonAsync<ErrorResponse>(_serializerOptions);
                             if (error.Error.Message.ToLower().Contains("ship was lost or destroyed upon entering the wormhole"))
+                            {
                                 _console.WriteLine("Ship was destroyed while attempting to traverse wormhole.");
+                                await _shipInfo.RefreshShipData();
+                            }
                             else if (error.Error.Message.StartsWith("Destination does not exist."))
                                 _console.WriteLine("Destination does not exist. Please check destination and try again.");
                             else
