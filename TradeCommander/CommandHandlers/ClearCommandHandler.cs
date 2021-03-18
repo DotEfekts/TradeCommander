@@ -13,6 +13,8 @@
         public bool BackgroundCanUse => false;
         public bool RequiresLogin => false;
 
+        public string HandleAutoComplete(string[] args, int index, bool loggedIn) => null;
+
         public CommandResult HandleCommand(string[] args, bool background, bool loggedIn)
         {
             if(background)

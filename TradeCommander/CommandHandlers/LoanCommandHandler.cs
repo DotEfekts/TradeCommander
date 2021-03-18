@@ -39,6 +39,8 @@ namespace TradeCommander.CommandHandlers
         public bool BackgroundCanUse => false;
         public bool RequiresLogin => true;
 
+        public string HandleAutoComplete(string[] args, int index, bool loggedIn) => null;
+
         public async Task<CommandResult> HandleCommandAsync(string[] args, bool background, bool loggedIn)
         {
             if(args.Length == 1 && (args[0] == "?" || args[0].ToLower() == "help"))

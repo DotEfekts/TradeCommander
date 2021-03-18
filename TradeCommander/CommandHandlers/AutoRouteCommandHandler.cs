@@ -32,6 +32,20 @@ namespace TradeCommander.CommandHandlers
         public bool BackgroundCanUse => false;
         public bool RequiresLogin => true;
 
+        private readonly string[] _subcommandList = { "list", "new", "delete", "add", "remove", "start", "stop" };
+
+        public string HandleAutoComplete(string[] args, int index, bool loggedIn)
+        {
+            if(args.Length == 1)
+            {
+                var startString = args.FirstOrDefault()?.Trim();
+                var completeList = _subcommandList.Where(c => c.StartsWith(startString ?? ""));
+                return completeList.ElementAt(index % completeList.Count());
+            }
+
+            return null;
+        }
+
         public CommandResult HandleCommand(string[] args, bool background, bool loggedIn)
         {
             if (args.Length == 1 && (args[0] == "?" || args[0].ToLower() == "help"))

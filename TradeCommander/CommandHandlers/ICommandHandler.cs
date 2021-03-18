@@ -12,6 +12,7 @@ namespace TradeCommander.CommandHandlers
         bool RequiresLogin { get; }
 
         CommandResult HandleCommand(string[] args, bool background, bool loggedIn);
+        string HandleAutoComplete(string[] args, int index, bool loggedIn);
     }
     public interface ICommandHandlerAsync
     {
@@ -20,5 +21,6 @@ namespace TradeCommander.CommandHandlers
         bool RequiresLogin { get; }
 
         Task<CommandResult> HandleCommandAsync(string[] args, bool background, bool loggedIn);
+        string HandleAutoComplete(string[] args, int index, bool loggedIn);
     }
 }

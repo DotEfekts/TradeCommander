@@ -44,6 +44,11 @@ namespace TradeCommander.Models
         public string Destination { get; set; }
     }
 
+    public class WarpRequest
+    {
+        public string ShipId { get; set; }
+    }
+
     public class FlightResponse
     {
         public FlightPlan FlightPlan { get; set; }

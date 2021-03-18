@@ -116,45 +116,51 @@ namespace TradeCommander.CommandHandlers
             return true;
         }
 
+        public string HandleAutoComplete(string command, int index)
+        {
+            if (string.IsNullOrWhiteSpace(command))
+                return command;
+
+            var splitCommand = GetSplitCommand(command, true);
+            if (splitCommand != null)
+            {
+                var commandName = splitCommand.First().ToUpper();
+                var args = new string[splitCommand.Length - 1];
+                Array.Copy(splitCommand.ToArray(), 1, args, 0, splitCommand.Length - 1);
+
+                if (_handlers.ContainsKey(commandName))
+                {
+                    var handler = _handlers[commandName];
+                    if (!handler.RequiresLogin || _userInfo.UserDetails != null)
+                        return RebuildCommand(command, handler.HandleAutoComplete(args, index, _userInfo.UserDetails != null));
+                }
+                else if (_asyncHandlers.ContainsKey(commandName.ToUpper()))
+                {
+                    var handler = _asyncHandlers[commandName];
+                    if (!handler.RequiresLogin || _userInfo.UserDetails != null)
+                        return RebuildCommand(command, handler.HandleAutoComplete(args, index, _userInfo.UserDetails != null));
+                }
+            }
+
+            return command;
+        }
+
         public async Task<CommandResult> InvokeCommand(string command, bool background = false)
         {
             if (string.IsNullOrWhiteSpace(command))
                 return CommandResult.SUCCESS;
-            
-            command = command
-                // Replace escaped quotes with NUL character
-                .Replace("\\\"", "\0");
 
-            if(command.Count(c => c == '"') % 2 == 1)
+            var splitCommand = GetSplitCommand(command, false);
+
+            if(splitCommand == null)
             {
                 _console.WriteLine("Command contains unterminated quoted string.");
                 return CommandResult.INVALID;
             }
 
-
-            var matches = _commandMatcher.Matches(command);
-            var argStrings = new List<string>();
-            foreach (Match match in matches)
-                if (match.Success & !string.IsNullOrWhiteSpace(match.Value))
-                {
-                    var endSpace = _stringEndTest.Match(match.Value).Success;
-                    var cleanedString = match.Value.Trim()
-                        // Strip non-escaped quotes
-                        .Replace("\"", "")
-                        // Reinsert escaped quotes
-                        .Replace("\0", "\"")
-                        // Replace escaped spaces
-                        .Replace("\\ ", " ");
-
-                    if (endSpace)
-                        cleanedString += " ";
-
-                    argStrings.Add(cleanedString);
-                }
-
-            var commandName = argStrings.First().ToUpper();
-            var args = new string[argStrings.Count - 1];
-            Array.Copy(argStrings.ToArray(), 1, args, 0, argStrings.Count - 1);
+            var commandName = splitCommand.First().ToUpper();
+            var args = new string[splitCommand.Length - 1];
+            Array.Copy(splitCommand.ToArray(), 1, args, 0, splitCommand.Length - 1);
 
             CommandResult result;
             if (_handlers.ContainsKey(commandName))
@@ -200,6 +206,67 @@ namespace TradeCommander.CommandHandlers
             if(result == CommandResult.INVALID)
                 _console.WriteLine("Invalid arguments. (See " + commandName + " help)");
             return result;
+        }
+
+        private string[] GetSplitCommand(string command, bool keepEmptyEnd)
+        {
+            command = command
+                // Replace escaped quotes with NUL character
+                .Replace("\\\"", "\0");
+
+            if (command.Count(c => c == '"') % 2 == 1)
+                return null;
+
+            var matches = _commandMatcher.Matches(command);
+            var argStrings = new List<string>();
+            foreach (Match match in matches)
+                if (match.Success && !string.IsNullOrWhiteSpace(match.Value))
+                {
+                    var endSpace = _stringEndTest.Match(match.Value).Success;
+                    var cleanedString = match.Value.Trim()
+                        // Strip non-escaped quotes
+                        .Replace("\"", "")
+                        // Reinsert escaped quotes
+                        .Replace("\0", "\"")
+                        // Replace escaped spaces
+                        .Replace("\\ ", " ");
+
+                    if (endSpace)
+                        cleanedString += " ";
+
+                    argStrings.Add(cleanedString);
+                }
+
+            if (keepEmptyEnd && command.TrimEnd() != command)
+                argStrings.Add("");
+
+            return argStrings.ToArray();
+        }
+
+        private string RebuildCommand(string command, string autoComplete)
+        {
+            if (autoComplete == null)
+                return command;
+
+            command = command
+                // Replace escaped quotes with NUL character
+                .Replace("\\\"", "\0");
+
+            if (command.Count(c => c == '"') % 2 == 1)
+                return null;
+
+            var matches = _commandMatcher.Matches(command);
+            var argStrings = new List<string>();
+            foreach (Match match in matches)
+                if (match.Success)
+                    argStrings.Add(match.Value);
+
+            if (command.TrimEnd() != command)
+                argStrings.Add("");
+
+            argStrings[^1] = autoComplete;
+
+            return string.Join(' ', argStrings);
         }
     }
 

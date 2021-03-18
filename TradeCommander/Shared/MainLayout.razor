@@ -48,11 +48,11 @@ else
             <div class="console">
                 <div class="output" id="console">
                     <div class="text-container">
-                        <p class="console-text">@Console.Output</p>
+                        <p class="console-text" @ref="consoleOutputElement">@Console.Output</p>
                     </div>
                 </div>
                 <div class="command-input">
-                    <span>&gt;</span><input type="text" name="command-input" id="command-input" @bind="commandInput" @bind:event="oninput" @onkeydown="ReadCommand" />
+                    <span>&gt;</span><input type="text" name="command-input" id="command-input" @bind="commandInput" @bind:event="oninput" @onkeydown="HandleInput" @ref="commandInputElement" />
                 </div>
             </div>
         </div>
@@ -71,14 +71,20 @@ else
 {
     private bool? gameOffline = null;
 
+    private ElementReference commandInputElement;
+    private bool inputBound = false;
     private string commandInput = "";
 
     private List<string> commandHistory = new List<string>();
     private int historyIndex = -1;
 
+    private string preCompleteInput = "";
+    private int autoCompleteIndex = 0;
+
     private Queue<string> commandQueue = new Queue<string>();
     private bool queueRunning = false;
 
+    private ElementReference consoleOutputElement;
     private bool initialMessageShown = false;
 
     protected override async Task OnInitializedAsync()
@@ -112,7 +118,7 @@ else
     private void OutputUpdated(object sender, string type)
     {
         StateHasChanged();
-        JS.InvokeVoidAsync("scrollConsoleDown");
+        JS.InvokeVoidAsync("scrollConsoleDown", consoleOutputElement);
     }
 
     private void UserUpdated(object sender, UserEventArgs eventArgs)
@@ -133,6 +139,12 @@ else
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
+        if (!inputBound && commandInputElement.Context != null)
+        {
+            inputBound = true;
+            await JS.InvokeVoidAsync("bindToInput", commandInputElement);
+        }
+
         if (!initialMessageShown && UserProvider.StartingDetailsChecked && gameOffline.HasValue)
         {
             initialMessageShown = true;
@@ -152,8 +164,19 @@ else
         await base.OnAfterRenderAsync(firstRender);
     }
 
-    private async Task ReadCommand(KeyboardEventArgs e)
+    private async Task HandleInput(KeyboardEventArgs e)
     {
+        if (e.Code == "Tab")
+        {
+            if (autoCompleteIndex == 0)
+                preCompleteInput = commandInput;
+            commandInput = Commands.HandleAutoComplete(preCompleteInput, autoCompleteIndex++);
+        }
+        else
+        {
+            autoCompleteIndex = 0;
+        }
+
         if (e.Code == "Enter" || e.Code == "NumpadEnter")
         {
             var command = commandInput;
@@ -185,7 +208,7 @@ else
                 historyIndex++;
                 commandInput = commandHistory[historyIndex];
                 StateHasChanged();
-                await JS.InvokeVoidAsync("moveCaretToEnd");
+                await JS.InvokeVoidAsync("moveCaretToEnd", commandInputElement);
             }
         }
         else if (e.Code == "ArrowDown")
@@ -198,7 +221,7 @@ else
                 else
                     commandInput = "";
                 StateHasChanged();
-                await JS.InvokeVoidAsync("moveCaretToEnd");
+                await JS.InvokeVoidAsync("moveCaretToEnd", commandInputElement);
             }
         }
     }
