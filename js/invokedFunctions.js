@@ -1,20 +1,33 @@
-﻿function scrollConsoleDown() {
+﻿function bindToInput(inputEl) {
+    inputEl.addEventListener("keydown", function (e) {
+        if (e.key === "Tab")
+            e.preventDefault();
+    });
+
+    document.addEventListener("mouseup", function (e) {
+        var highlightedText = "";
+        if (window.getSelection) {
+            highlightedText = window.getSelection().toString();
+        }
+        else if (document.selection && document.selection.type !== "Control") {
+            highlightedText = document.selection.createRange().text;
+        }
+
+        if (!highlightedText || highlightedText === "")
+            inputEl.focus();
+    })
+}
+
+function scrollConsoleDown(consoleEl) {
     window.setTimeout(function() {
-        const console = document.getElementById('console');
-        console.scrollTop = console.scrollHeight;
+        consoleEl.scrollTop = consoleEl.scrollHeight;
     }, 0);
 }
 
-function moveCaretToEnd() {
+function moveCaretToEnd(inputEl) {
     window.setTimeout(function () {
-        const input = document.getElementById('command-input');
-        input.selectionStart = input.selectionEnd = input.value.length;
+        inputEl.selectionStart = inputEl.selectionEnd = inputEl.value.length;
     }, 0);
-}
-
-function getInputVal() {
-    const input = document.getElementById('command-input');
-    return input.value;
 }
 
 function setCssVar(name, value) {
