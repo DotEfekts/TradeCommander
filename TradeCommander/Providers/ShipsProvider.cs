@@ -296,14 +296,22 @@ namespace TradeCommander.Providers
                     }
                 }
 
+                var takenIds = new List<int>();
+                foreach (var ship in newShipData)
+                {
+                    if (takenIds.Contains(ship.Value.Id))
+                        ship.Value.Id = GetNewShipId(newShipData.Values.ToArray());
+                    takenIds.Add(ship.Value.Id);
+                }
+
                 if (ships != null)
                 {
                     var shipsToAdd = ships.Where(t => !newShipData.ContainsKey(t.Id)).ToArray();
-                    var currentShips = newShipData.Count;
+                    var currentIds = newShipData.Select(s => s.Value.Id);
                     for (var x = 0; x < shipsToAdd.Length; x++)
                         newShipData.Add(shipsToAdd[x].Id, new ShipData
                         {
-                            Id = x + 1 + currentShips,
+                            Id = GetNewShipId(newShipData.Values.ToArray()),
                             DisplayName = shipsToAdd[x].Id,
                             ServerId = shipsToAdd[x].Id,
                         });
@@ -355,6 +363,17 @@ namespace TradeCommander.Providers
         {
             if(_shipData != null)
                 _localStorage.SetItem("ShipData." + _userProvider.Username, _shipData);
+        }
+
+        private static int GetNewShipId(ShipData[] existingShips)
+        {
+            var id = 1;
+            var existingIds = existingShips.Select(s => s.Id);
+
+            while (existingIds.Contains(id))
+                id++;
+
+            return id;
         }
     }
 
