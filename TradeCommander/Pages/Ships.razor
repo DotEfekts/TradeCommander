@@ -29,7 +29,7 @@
                 </tr>
             </thead>
             <tbody>
-                @foreach (var shipData in ships)
+                @foreach (var shipData in ships.OrderBy(s => s.Id))
                 {
                     <tr>
                         <td>@shipData.Id</td>
