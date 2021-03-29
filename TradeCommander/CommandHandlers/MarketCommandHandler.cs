@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Components;
+using System;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
@@ -19,7 +20,9 @@ namespace TradeCommander.CommandHandlers
         private readonly NavigationManager _navManager;
         private readonly HttpClient _http;
         private readonly JsonSerializerOptions _serializerOptions;
-        
+
+        private const int TRADE_CAP = 300;
+
         public MarketCommandHandler(
             UserProvider userInfo,
             ShipsProvider shipInfo,
@@ -103,117 +106,7 @@ namespace TradeCommander.CommandHandlers
                         var quantityType = GetQuantityType(args[3], out int quantity);
                         if (quantityType != QuantityType.INVALID)
                         {
-                            var response = await _marketInfo.RefreshMarketData(shipData.Ship.Location, false);
-                            if (response != null)
-                            {
-                                var market = response.Location.Marketplace;
-                                var good = market.FirstOrDefault(t => t.Symbol == args[2].ToUpper());
-
-                                if (good != null)
-                                {
-                                    if (good.QuantityAvailable > 0)
-                                    {
-                                        var spaceLeft = shipData.Ship.MaxCargo - shipData.Ship.Cargo.Sum(t => t.TotalVolume);
-
-                                        if (quantityType == QuantityType.TO_AMOUNT)
-                                        {
-                                            quantity -= shipData.Ship.Cargo.Where(t => t.Good == good.Symbol).Sum(t => t.Quantity);
-                                            if (quantity < 1)
-                                            {
-                                                if (!background)
-                                                    _console.WriteLine("Cargo already at or over given buy limit.");
-                                                return CommandResult.SUCCESS;
-                                            }
-                                        }
-                                        else if (quantityType == QuantityType.PERCENT)
-                                            quantity = (int)(shipData.Ship.MaxCargo * (quantity / 100d)) / good.VolumePerUnit;
-                                        else if (quantityType == QuantityType.MAX)
-                                            quantity = good.QuantityAvailable;
-
-                                        var shipSpaceExceeded = quantity * good.VolumePerUnit > spaceLeft;
-                                        if (shipSpaceExceeded && good.VolumePerUnit > 0)
-                                            quantity = spaceLeft / good.VolumePerUnit;
-
-                                        var quantityAdjusted = quantity > good.QuantityAvailable;
-                                        if (quantityAdjusted)
-                                            quantity = good.QuantityAvailable;
-
-                                        if (quantityType == QuantityType.MAX && quantity * good.PricePerUnit > _userInfo.UserDetails.Credits)
-                                            quantity = _userInfo.UserDetails.Credits / good.PricePerUnit;
-
-                                        if (quantity > 0 || (quantityType == QuantityType.MAX && spaceLeft >= good.VolumePerUnit))
-                                        {
-                                            if(quantityType == QuantityType.TO_AMOUNT && quantity * good.PricePerUnit > _userInfo.UserDetails.Credits)
-                                                quantity = _userInfo.UserDetails.Credits / good.PricePerUnit;
-
-                                            if (quantity > 0 && quantity * good.PricePerUnit <= _userInfo.UserDetails.Credits)
-                                            {
-                                                if (!background)
-                                                {
-                                                    if (quantityType == QuantityType.MAX)
-                                                        _console.WriteLine("Purchasing maximum. Purchase quantity: " + quantity + ".");
-                                                    else if (quantityAdjusted)
-                                                        _console.WriteLine("Insufficient quantity available for purchase. Purchasing maximum.");
-                                                    else if (shipSpaceExceeded)
-                                                        _console.WriteLine("Insufficient cargo space available for purchase. Purchasing maximum.");
-                                                }
-
-                                                using var httpResult = await _http.PostAsJsonAsync("/users/" + _userInfo.Username + "/purchase-orders", new TransactionRequest
-                                                {
-                                                    ShipId = shipData.ServerId,
-                                                    Good = good.Symbol,
-                                                    Quantity = quantity
-                                                });
-
-                                                if (httpResult.StatusCode == HttpStatusCode.Created)
-                                                {
-                                                    var purchaseResult = await httpResult.Content.ReadFromJsonAsync<TransactionResult>(_serializerOptions);
-
-                                                    _userInfo.SetCredits(purchaseResult.Credits);
-                                                    _shipInfo.UpdateShipCargo(purchaseResult.Ship.Id, purchaseResult.Ship.Cargo);
-
-                                                    if (!background)
-                                                    {
-                                                        _navManager.NavigateTo(_navManager.BaseUri + "ships/cargo/" + shipData.ServerId);
-                                                        _console.WriteLine(quantity + " units of cargo purchased successfully. Total cost: " + purchaseResult.Order.Total + " credits.");
-                                                    }
-
-                                                    return CommandResult.SUCCESS;
-                                                }
-                                                else
-                                                {
-                                                    var error = await httpResult.Content.ReadFromJsonAsync<ErrorResponse>(_serializerOptions);
-                                                    _console.WriteLine(error.Error.Message);
-                                                    if (background)
-                                                        _console.WriteLine("Unhandled error occurred during route purchase. Attempting to continue.");
-                                                }
-                                            }
-                                            else
-                                                if (!background)
-                                                _console.WriteLine("Insufficient credits available for purchase.");
-                                            else
-                                                _console.WriteLine("Insufficient credits available for route purchase. Attempting to continue.");
-                                        }
-                                        else
-                                            if (!background)
-                                            _console.WriteLine("Insufficient cargo space available for any purchase of this good.");
-                                        else
-                                            _console.WriteLine("Route ship has insufficient cargo space. Attempting to continue.");
-                                    }
-                                    else
-                                        if (!background)
-                                        _console.WriteLine("The good specified is not in stock at this ships market.");
-                                    else
-                                        _console.WriteLine("Market in route is out of stock. Attempting to continue.");
-
-                                    if (background)
-                                        return CommandResult.SUCCESS;
-                                }
-                                else
-                                    _console.WriteLine("The good specified could not be found at this ships market.");
-                            }
-                            else
-                                _console.WriteLine("An unknown error occurred while fetching market data. Please try again.");
+                            return await ProcessPurchase(shipData, quantityType, quantity, args[2], background, false);
                         }
                         else
                             _console.WriteLine("Invalid quantity provided. Must be at least 1.");
@@ -264,44 +157,57 @@ namespace TradeCommander.CommandHandlers
                                         _console.WriteLine("Selling maximum. Sell quantity: " + quantity + ".");
                                 }
 
-                                var httpResult = await _http.PostAsJsonAsync("/users/" + _userInfo.Username + "/sell-orders", new TransactionRequest
+                                var quantityRemaining = quantity;
+                                var anySold = false;
+                                while(quantityRemaining > 0)
                                 {
-                                    ShipId = shipData.ServerId,
-                                    Good = good.Good,
-                                    Quantity = quantity
-                                });
+                                    var quantityProcessing = Math.Min(TRADE_CAP, quantityRemaining);
+                                    quantityRemaining -= quantityProcessing;
 
-                                if (httpResult.StatusCode == HttpStatusCode.Created)
-                                {
-                                    var saleResult = await httpResult.Content.ReadFromJsonAsync<TransactionResult>(_serializerOptions);
-
-                                    _userInfo.SetCredits(saleResult.Credits);
-                                    _shipInfo.UpdateShipCargo(saleResult.Ship.Id, saleResult.Ship.Cargo);
-
-                                    if (!background)
+                                    var httpResult = await _http.PostAsJsonAsync("/users/" + _userInfo.Username + "/sell-orders", new TransactionRequest
                                     {
-                                        _navManager.NavigateTo(_navManager.BaseUri + "ships/cargo/" + shipData.ServerId);
-                                        _console.WriteLine(quantity + " units of cargo sold successfully. Total made: " + saleResult.Order.Total + " credits.");
+                                        ShipId = shipData.ServerId,
+                                        Good = good.Good,
+                                        Quantity = quantityProcessing
+                                    });
+
+                                    if (httpResult.StatusCode == HttpStatusCode.Created)
+                                    {
+                                        var saleResult = await httpResult.Content.ReadFromJsonAsync<TransactionResult>(_serializerOptions);
+
+                                        _userInfo.SetCredits(saleResult.Credits);
+                                        _shipInfo.UpdateShipCargo(saleResult.Ship.Id, saleResult.Ship.Cargo);
+
+                                        if (!background)
+                                        {
+                                            _navManager.NavigateTo(_navManager.BaseUri + "ships/cargo/" + shipData.ServerId);
+                                            _console.WriteLine(quantityProcessing + " units of cargo sold successfully. Total made: " + saleResult.Order.Total + " credits.");
+                                        }
+
+                                        anySold = true;
+
+                                        if (quantityRemaining <= 0)
+                                            return CommandResult.SUCCESS;
                                     }
-
-                                    return CommandResult.SUCCESS;
-                                }
-                                else
-                                {
-                                    var errorResponseString = await httpResult.Content.ReadAsStringAsync();
-                                    var errorResponse = JsonSerializer.Deserialize<ErrorResponse>(errorResponseString, _serializerOptions);
-
-                                    if(errorResponse.Error == null)
-                                        errorResponse.Error = JsonSerializer.Deserialize<Error>(errorResponseString, _serializerOptions);
-
-                                    if (errorResponse.Error.Message.ToLower().Contains("good is not listed in planet marketplace"))
-                                        _console.WriteLine("The good specified cannot be sold at this ships market.");
                                     else
                                     {
-                                        _console.WriteLine(errorResponse.Error.Message);
+                                        var errorResponseString = await httpResult.Content.ReadAsStringAsync();
+                                        var errorResponse = JsonSerializer.Deserialize<ErrorResponse>(errorResponseString, _serializerOptions);
 
-                                        if (background)
-                                            _console.WriteLine("Unhandled error occurred during route purchase. Attempting to continue.");
+                                        if (errorResponse.Error == null)
+                                            errorResponse.Error = JsonSerializer.Deserialize<Error>(errorResponseString, _serializerOptions);
+
+                                        if (errorResponse.Error.Message.ToLower().Contains("good is not listed in planet marketplace"))
+                                            _console.WriteLine("The good specified cannot be sold at this ships market.");
+                                        else
+                                        {
+                                            _console.WriteLine(errorResponse.Error.Message);
+
+                                            if (background)
+                                                _console.WriteLine("Unhandled error occurred during route purchase. Attempting to continue.");
+                                        }
+
+                                        return anySold ? CommandResult.SUCCESS : CommandResult.FAILURE;
                                     }
                                 }
                             }
@@ -355,6 +261,128 @@ namespace TradeCommander.CommandHandlers
                     quantityType = QuantityType.INVALID;
 
             return quantityType;
+        }
+
+        private async Task<CommandResult> ProcessPurchase(ShipData shipData, QuantityType quantityType, int quantity, string symbol, bool background, bool repeated)
+        {
+            var response = await _marketInfo.RefreshMarketData(shipData.Ship.Location, false);
+            if (response != null)
+            {
+                var market = response.Location.Marketplace;
+                var good = market.FirstOrDefault(t => t.Symbol == symbol.ToUpper());
+
+                if (good != null)
+                {
+                    if (good.QuantityAvailable > 0)
+                    {
+                        var spaceLeft = shipData.Ship.MaxCargo - shipData.Ship.Cargo.Sum(t => t.TotalVolume);
+
+                        if (quantityType == QuantityType.TO_AMOUNT)
+                        {
+                            quantity -= shipData.Ship.Cargo.Where(t => t.Good == good.Symbol).Sum(t => t.Quantity);
+                            if (quantity < 1)
+                            {
+                                if (!background)
+                                    _console.WriteLine("Cargo already at or over given buy limit.");
+                                return CommandResult.SUCCESS;
+                            }
+                        }
+                        else if (quantityType == QuantityType.PERCENT)
+                            quantity = (int)(shipData.Ship.MaxCargo * (quantity / 100d)) / good.VolumePerUnit;
+                        else if (quantityType == QuantityType.MAX)
+                            quantity = good.QuantityAvailable;
+
+                        var shipSpaceExceeded = quantity * good.VolumePerUnit > spaceLeft;
+                        if (shipSpaceExceeded && good.VolumePerUnit > 0)
+                            quantity = spaceLeft / good.VolumePerUnit;
+
+                        var quantityAdjusted = quantity > good.QuantityAvailable;
+                        if (quantityAdjusted)
+                            quantity = good.QuantityAvailable;
+
+                        var buyPrice = good.PricePerUnit + good.Spread;
+                        if (quantityType == QuantityType.MAX && quantity * buyPrice > _userInfo.UserDetails.Credits)
+                            quantity = _userInfo.UserDetails.Credits / buyPrice;
+
+                        if (quantity > 0 || (quantityType == QuantityType.MAX && spaceLeft >= good.VolumePerUnit))
+                        {
+                            if (quantityType == QuantityType.TO_AMOUNT && quantity * buyPrice > _userInfo.UserDetails.Credits)
+                                quantity = _userInfo.UserDetails.Credits / buyPrice;
+
+                            if (quantity > 0 && quantity * buyPrice <= _userInfo.UserDetails.Credits)
+                            {
+                                if (!background && !repeated)
+                                {
+                                    if (quantityType == QuantityType.MAX)
+                                        _console.WriteLine("Maximum purchase requested, please standby.");
+                                    else if (quantityAdjusted)
+                                        _console.WriteLine("Insufficient quantity available for purchase. Purchasing maximum.");
+                                    else if (shipSpaceExceeded)
+                                        _console.WriteLine("Insufficient cargo space available for purchase. Purchasing maximum.");
+                                }
+
+                                var quantityProcessing = Math.Min(TRADE_CAP, quantity);
+
+                                using var httpResult = await _http.PostAsJsonAsync("/users/" + _userInfo.Username + "/purchase-orders", new TransactionRequest
+                                {
+                                    ShipId = shipData.ServerId,
+                                    Good = good.Symbol,
+                                    Quantity = quantityProcessing
+                                });
+
+                                if (httpResult.StatusCode == HttpStatusCode.Created)
+                                {
+                                    var purchaseResult = await httpResult.Content.ReadFromJsonAsync<TransactionResult>(_serializerOptions);
+
+                                    _userInfo.SetCredits(purchaseResult.Credits);
+                                    _shipInfo.UpdateShipCargo(purchaseResult.Ship.Id, purchaseResult.Ship.Cargo);
+
+                                    if (!background)
+                                    {
+                                        _navManager.NavigateTo(_navManager.BaseUri + "ships/cargo/" + shipData.ServerId);
+                                        _console.WriteLine(quantityProcessing + " units of cargo purchased successfully. Total cost: " + purchaseResult.Order.Total + " credits.");
+                                    }
+
+                                    if (quantity - quantityProcessing > 0)
+                                        await ProcessPurchase(shipData, quantityType != QuantityType.MAX ? QuantityType.FLAT : QuantityType.MAX, quantity - quantityProcessing, symbol, background, true);
+                                    return CommandResult.SUCCESS;
+                                }
+                                else
+                                {
+                                    var error = await httpResult.Content.ReadFromJsonAsync<ErrorResponse>(_serializerOptions);
+                                    _console.WriteLine(error.Error.Message);
+                                    if (background)
+                                        _console.WriteLine("Unhandled error occurred during route purchase. Attempting to continue.");
+                                }
+                            }
+                            else
+                                if (!background)
+                                _console.WriteLine("Insufficient credits available for purchase.");
+                            else
+                                _console.WriteLine("Insufficient credits available for route purchase. Attempting to continue.");
+                        }
+                        else
+                            if (!background)
+                            _console.WriteLine("Insufficient cargo space available for any purchase of this good.");
+                        else
+                            _console.WriteLine("Route ship has insufficient cargo space. Attempting to continue.");
+                    }
+                    else
+                        if (!background)
+                        _console.WriteLine("The good specified is not in stock at this ships market.");
+                    else
+                        _console.WriteLine("Market in route is out of stock. Attempting to continue.");
+
+                    if (background)
+                        return CommandResult.SUCCESS;
+                }
+                else
+                    _console.WriteLine("The good specified could not be found at this ships market.");
+            }
+            else
+                _console.WriteLine("An unknown error occurred while fetching market data. Please try again.");
+
+            return CommandResult.FAILURE;
         }
 
         private enum QuantityType

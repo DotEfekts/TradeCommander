@@ -98,14 +98,14 @@
                     var systemFlightsResponse = await Http.GetFromJsonAsync<SystemFlightPlansResponse>("/game/systems/" + systemSymbol.ToUpper() + "/flight-plans", SerializerOptions);
 
                     var timeNow = DateTimeOffset.UtcNow;
-                    var ownPlans = ships.Select(s => s.LastFlightPlan.Id);
+                    var ownPlans = ships.Select(s => s.LastFlightPlan?.Id);
                     flightPlans = systemFlightsResponse.FlightPlans.Select(p => new ClientSystemFlightPlan
                     {
                         Id = p.Id,
                         ArrivesAt = p.ArrivesAt,
                         CreatedAt = p.CreatedAt,
-                        To = p.To,
-                        From = p.From,
+                        Departure = p.Departure,
+                        Destination = p.Destination,
                         Username = p.Username,
                         ShipType = p.ShipType,
                         TimeRemaining = (int)Math.Ceiling(p.ArrivesAt.Subtract(timeNow).TotalSeconds),

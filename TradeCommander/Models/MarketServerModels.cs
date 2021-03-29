@@ -27,6 +27,7 @@ namespace TradeCommander.Models
         public int PricePerUnit { get; set; }
         public int QuantityAvailable { get; set; }
         public int VolumePerUnit { get; set; }
+        public int Spread { get; set; }
     }
 
     public class TransactionRequest

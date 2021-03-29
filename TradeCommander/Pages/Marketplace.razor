@@ -21,8 +21,9 @@
                     <tr>
                         <th>Symbol</th>
                         <th>Quantity Available</th>
-                        <th>Price Per Unit</th>
                         <th>Volume Per Unit</th>
+                        <th>Buy Price</th>
+                        <th>Sell Price</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -31,8 +32,9 @@
                     <tr>
                         <td>@good.Symbol</td>
                         <td>@good.QuantityAvailable.ToString("N0")</td>
-                        <td>@good.PricePerUnit.ToString("N0") credits</td>
                         <td>@good.VolumePerUnit</td>
+                        <td>@((good.PricePerUnit + good.Spread).ToString("N0")) credits</td>
+                        <td>@((good.PricePerUnit - good.Spread).ToString("N0")) credits</td>
                     </tr>
                     }
                 </tbody>

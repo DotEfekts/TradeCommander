@@ -218,8 +218,8 @@ function renderMap(locations, width, height, shipData, shipFocus, locationSymbol
         if (flightPlans !== null) {
             for (let i = 0; i < flightPlans.length; i++) {
                 let plan = flightPlans[i];
-                let flightPlanStart = locations.find(l => l.symbol === plan.from);
-                let flightPlanEnd = locations.find(l => l.symbol === plan.to);
+                let flightPlanStart = locations.find(l => l.symbol === plan.departure);
+                let flightPlanEnd = locations.find(l => l.symbol === plan.destination);
 
                 if (flightPlanStart && flightPlanEnd) {
                     let x1 = flightPlanStart.x;

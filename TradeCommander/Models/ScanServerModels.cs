@@ -49,8 +49,8 @@ namespace TradeCommander.Models
         public string Id { get; set; }
         public DateTimeOffset CreatedAt { get; set; }
         public DateTimeOffset ArrivesAt { get; set; }
-        public string To { get; set; }
-        public string From { get; set; }
+        public string Destination { get; set; }
+        public string Departure { get; set; }
         public string Username { get; set; }
         public string ShipType { get; set; }
     }

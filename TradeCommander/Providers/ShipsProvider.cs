@@ -195,9 +195,9 @@ namespace TradeCommander.Providers
                         if (ship.LastFlightPlan != null && !ship.FlightEnded)
                         {
                             var secondsRemaining = (int)Math.Ceiling(ship.LastFlightPlan.ArrivesAt.Subtract(DateTimeOffset.UtcNow).TotalSeconds);
-                            var secondsPassed = ship.LastFlightPlan.TimeRemainingInSeconds - secondsRemaining;
-                            ship.LastFlightPlan.TimeRemainingInSeconds -= secondsPassed;
-                            ship.TimeElapsed += secondsPassed;
+                            var secondsPassed = (int)Math.Floor(DateTimeOffset.UtcNow.Subtract(ship.LastFlightPlan.CreatedAt).TotalSeconds);
+                            ship.LastFlightPlan.TimeRemainingInSeconds = secondsRemaining;
+                            ship.TimeElapsed = secondsPassed;
 
                             if (ship.LastFlightPlan.TimeRemainingInSeconds < 0)
                             {

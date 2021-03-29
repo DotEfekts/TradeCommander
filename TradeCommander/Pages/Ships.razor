@@ -2,7 +2,7 @@
 @inject ShipsProvider ShipProvider
 
 <div class="layout-container">
-    @if (ships == null)
+    @if (ships.Length == 0)
     {
         @if (ShipProvider.DataRefreshing)
         {

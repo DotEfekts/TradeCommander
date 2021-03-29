@@ -62,7 +62,8 @@ namespace TradeCommander.CommandHandlers
 
                     _console.Clear();
                     _console.WriteLine("Welcome, " + _userInfo.UserDetails.Username + ". Your token is: " + signupResult.Token);
-                    _console.WriteLine("Please copy this token somewhere safe as it is not recoverable.");
+                    _console.WriteLine("Please copy this token somewhere safe as it is not recoverable from the SpaceTraders API.");
+                    _console.WriteLine("To view your token again use the command \"TOKEN\" while logged in.");
 
                     if (_userInfo.UserDetails == null)
                         _console.WriteLine("An error occurred during login. Please copy your token and login manually.");
