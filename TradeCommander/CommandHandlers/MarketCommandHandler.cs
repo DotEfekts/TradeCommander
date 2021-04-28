@@ -171,7 +171,7 @@ namespace TradeCommander.CommandHandlers
                                         Quantity = quantityProcessing
                                     });
 
-                                    if (httpResult.StatusCode == HttpStatusCode.Created)
+                                    if (httpResult.IsSuccessStatusCode)
                                     {
                                         var saleResult = await httpResult.Content.ReadFromJsonAsync<TransactionResult>(_serializerOptions);
 
@@ -330,7 +330,7 @@ namespace TradeCommander.CommandHandlers
                                     Quantity = quantityProcessing
                                 });
 
-                                if (httpResult.StatusCode == HttpStatusCode.Created)
+                                if (httpResult.IsSuccessStatusCode)
                                 {
                                     var purchaseResult = await httpResult.Content.ReadFromJsonAsync<TransactionResult>(_serializerOptions);
 

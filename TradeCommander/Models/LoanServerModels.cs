@@ -24,9 +24,16 @@ namespace TradeCommander.Models
         public int TermInDays { get; set; }
 
     }
+
     public class LoansResponse
     {
         public Loan[] Loans { get; set; }
+    }
+
+    public class LoanResponse
+    {
+        public int Credits { get; set; }
+        public Loan Loan { get; set; }
     }
 
     public class Loan 

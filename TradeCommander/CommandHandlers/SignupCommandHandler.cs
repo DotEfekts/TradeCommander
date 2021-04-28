@@ -54,7 +54,7 @@ namespace TradeCommander.CommandHandlers
             {
                 var httpResult = await _http.PostAsJsonAsync("/users/" + args[0] + "/token", new { });
 
-                if (httpResult.StatusCode == HttpStatusCode.Created)
+                if (httpResult.IsSuccessStatusCode)
                 {
                     var signupResult = await httpResult.Content.ReadFromJsonAsync<SignupResponse>(_serializerOptions);
 

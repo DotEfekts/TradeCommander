@@ -121,6 +121,20 @@ namespace TradeCommander.Providers
                 IsInitialCheck = false
             });
         }
+
+        public async Task RefreshData()
+        {
+            var userResponse = await _http.GetFromJsonAsync<DetailsResponse>("/users/" + Username, _serializerOptions);
+
+            UserDetails = userResponse.User;
+
+            UserUpdated?.Invoke(this, new UserEventArgs
+            {
+                UserDetails = userResponse.User,
+                IsFullRefresh = true,
+                IsInitialCheck = false
+            });
+        }
     }
 
     public class UserEventArgs

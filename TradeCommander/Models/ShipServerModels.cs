@@ -10,6 +10,12 @@ namespace TradeCommander.Models
         public Ship[] Ships { get; set; }
     }
 
+    public class ShipResponse
+    {
+        public int Credits { get; set; }
+        public Ship Ship { get; set; }
+    }
+
     public class Ship
     {
         public string Id { get; set; }
@@ -36,6 +42,37 @@ namespace TradeCommander.Models
         public string Good { get; set; }
         public int Quantity { get; set; }
         public int TotalVolume { get; set; }
+    }
+
+    public class JettisonRequest
+    {
+        public string Good { get; set; }
+        public int Quantity { get; set; }
+    }
+
+    public class JettisonResponse
+    { 
+        public string Good { get; set; }
+        public int QuantityRemaining { get; set; }
+        public string ShipId { get; set; }
+    }
+
+    public class ScrapResponse
+    {
+        public string Success { get; set; }
+    }
+
+    public class TransferRequest
+    {
+        public string Good { get; set; }
+        public int Quantity { get; set; }
+        public string ToShipId { get; set; }
+    }
+
+    public class TransferResponse
+    {
+        public Ship FromShip { get; set; }
+        public Ship ToShip { get; set; }
     }
 
     public class FlightRequest 

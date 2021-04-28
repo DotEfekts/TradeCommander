@@ -18,7 +18,7 @@ namespace TradeCommander.CommandHandlers
         private readonly NavigationManager _navManager;
         private readonly HttpClient _http;
         private readonly JsonSerializerOptions _serializerOptions;
-        
+
         public ShipsCommandHandler(
             UserProvider userInfo,
             ShipsProvider shipInfo,
@@ -50,10 +50,13 @@ namespace TradeCommander.CommandHandlers
                 _console.WriteLine("Subcommands");
                 _console.WriteLine("map: Displays the local map for the ship - SHIP <Ship Id> map");
                 _console.WriteLine("cargo: Displays the cargo of ship - SHIP <Ship Id> cargo");
+                _console.WriteLine("transfer: Transfers cargo between your ships - SHIP <Ship Id> transfer <Good> <Quantity> <Transfer to Ship Id>");
+                _console.WriteLine("jettison: Jettisons cargo from the ship - SHIP <Ship Id> jettison <Good> <Quantity>");
                 _console.WriteLine("fly: Enacts a flightplan for a ship - SHIP <Ship Id> fly <Location Symbol>");
                 _console.WriteLine("warp: Warps a ship through the docked wormhole - SHIP <Ship Id> warp");
                 _console.WriteLine("rename: Renames a ship - SHIP <Ship Id> rename <New Name>");
                 _console.WriteLine("info: Prints the specifications of ship - SHIP <Ship Id> info");
+                _console.WriteLine("scrap: Scraps the ship for credits - SHIP <Ship Id> scrap");
                 return CommandResult.SUCCESS;
             }
             else if (!background && args.Length == 2 && args[1].ToLower() == "map")
@@ -92,7 +95,7 @@ namespace TradeCommander.CommandHandlers
                             Destination = args[2].ToUpper()
                         });
 
-                        if (httpResult.StatusCode == HttpStatusCode.Created)
+                        if (httpResult.IsSuccessStatusCode)
                         {
                             var flightResult = await httpResult.Content.ReadFromJsonAsync<FlightResponse>(_serializerOptions);
 
@@ -143,7 +146,7 @@ namespace TradeCommander.CommandHandlers
                             ShipId = shipData.ServerId
                         });
 
-                        if (httpResult.StatusCode == HttpStatusCode.Created)
+                        if (httpResult.IsSuccessStatusCode)
                         {
                             var flightResult = await httpResult.Content.ReadFromJsonAsync<FlightResponse>(_serializerOptions);
 
@@ -193,6 +196,157 @@ namespace TradeCommander.CommandHandlers
 
                     _console.WriteLine("Ship " + lastName + " renamed to " + shipData.DisplayName + ".");
                     return CommandResult.SUCCESS;
+                }
+                else
+                    _console.WriteLine("Invalid ship id. Please use number ids and not the full string id.");
+                return CommandResult.FAILURE;
+            }
+            else if (!background && args.Length == 5 && args[1].ToLower() == "transfer")
+            {
+                if (_shipInfo.TryGetShipDataByLocalId(args[0], out var shipData))
+                {
+                    if (_shipInfo.TryGetShipDataByLocalId(args[4], out var shipToData))
+                    {
+                        if (shipData.ServerId != shipToData.ServerId)
+                        {
+                            if (shipData.Ship.Location != null && shipData.Ship.Location == shipToData.Ship.Location)
+                            {
+                                var cargo = shipData.Ship.Cargo.FirstOrDefault(t => t.Good.ToUpper() == args[2].ToUpper());
+                                if (cargo != null)
+                                {
+                                    if (int.TryParse(args[3], out int quantity) && quantity > 0)
+                                    {
+                                        if (quantity > cargo.Quantity)
+                                            quantity = cargo.Quantity;
+
+                                        using var httpResult = await _http.PutAsJsonAsync("/users/" + _userInfo.Username + "/ships/" + shipData.ServerId + "/transfer", new TransferRequest
+                                        {
+                                            Good = cargo.Good,
+                                            Quantity = quantity,
+                                            ToShipId = shipToData.ServerId
+                                        });
+
+                                        if (httpResult.IsSuccessStatusCode)
+                                        {
+                                            var transferResult = await httpResult.Content.ReadFromJsonAsync<TransferResponse>(_serializerOptions);
+
+                                            _shipInfo.UpdateShipCargo(transferResult.FromShip.Id, transferResult.FromShip.Cargo);
+                                            _shipInfo.UpdateShipCargo(transferResult.ToShip.Id, transferResult.ToShip.Cargo);
+
+                                            _console.WriteLine(quantity + " units of " + cargo.Good + " transferred from " + shipData.DisplayName + " to " + shipToData.DisplayName + ".");
+                                            _navManager.NavigateTo(_navManager.BaseUri + "ships/cargo/" + shipData.ServerId);
+
+                                            return CommandResult.SUCCESS;
+                                        }
+                                        else
+                                        {
+                                            var error = await httpResult.Content.ReadFromJsonAsync<ErrorResponse>(_serializerOptions);
+
+                                            await _shipInfo.RefreshShipData();
+                                            _console.WriteLine(error.Error.Message);
+                                        }
+                                    }
+                                    else
+                                        _console.WriteLine("Invalid quantity provided. Please provide a valid number greater than 0.");
+                                }
+                                else
+                                    _console.WriteLine("Invalid cargo type. Please specify a cargo the ship contains.");
+                            }
+                            else
+                                _console.WriteLine("Ships must be docked in the same location to transfer.");
+                        }
+                        else
+                            _console.WriteLine("You cannot transfer cargo to the same ship.");
+                    }
+                    else
+                        _console.WriteLine("Invalid ship id for ship to transfer to. Please use number ids and not the full string id.");
+                }
+                else
+                    _console.WriteLine("Invalid ship id for ship to transfer from. Please use number ids and not the full string id.");
+                return CommandResult.FAILURE;
+            }
+            else if (!background && args.Length == 4 && args[1].ToLower() == "jettison")
+            {
+                if (_shipInfo.TryGetShipDataByLocalId(args[0], out var shipData))
+                {
+                    var cargo = shipData.Ship.Cargo.FirstOrDefault(t => t.Good.ToUpper() == args[2].ToUpper());
+                    if (cargo != null)
+                    {
+                        if (int.TryParse(args[3], out int quantity) && quantity > 0)
+                        {
+                            if (quantity > cargo.Quantity)
+                                quantity = cargo.Quantity;
+
+                            using var httpResult = await _http.PutAsJsonAsync("/users/" + _userInfo.Username + "/ships/" + shipData.ServerId + "/jettison", new JettisonRequest
+                            {
+                                Good = cargo.Good,
+                                Quantity = quantity
+                            });
+
+                            if (httpResult.IsSuccessStatusCode)
+                            {
+                                var jettisonResult = await httpResult.Content.ReadFromJsonAsync<JettisonResponse>(_serializerOptions);
+
+                                var cargoToAdd = shipData.Ship.Cargo.ToList();
+
+                                cargo.Quantity -= quantity;
+                                if (cargo.Quantity <= 0)
+                                    cargoToAdd.Remove(cargo);
+
+                                _shipInfo.UpdateShipCargo(shipData.ServerId, cargoToAdd.ToArray());
+
+                                _console.WriteLine(quantity + " units of " + cargo.Good + " jettisoned. " + jettisonResult.QuantityRemaining + " units remaining.");
+                                _navManager.NavigateTo(_navManager.BaseUri + "ships/cargo/" + shipData.ServerId);
+
+                                return CommandResult.SUCCESS;
+                            }
+                            else
+                            {
+                                var error = await httpResult.Content.ReadFromJsonAsync<ErrorResponse>(_serializerOptions);
+
+                                await _shipInfo.RefreshShipData();
+                                _console.WriteLine(error.Error.Message);
+                            }
+                        }
+                        else
+                            _console.WriteLine("Invalid quantity provided. Please provide a valid number greater than 0.");
+                    }
+                    else
+                        _console.WriteLine("Invalid cargo type. Please specify a cargo the ship contains.");
+                }
+                else
+                    _console.WriteLine("Invalid ship id. Please use number ids and not the full string id.");
+                return CommandResult.FAILURE;
+            }
+            else if (!background && args.Length == 2 && args[1].ToLower() == "scrap")
+            {
+                if (_shipInfo.TryGetShipDataByLocalId(args[0], out var shipData))
+                {
+                    using var httpResult = await _http.DeleteAsync("/users/" + _userInfo.Username + "/ships/" + shipData.ServerId);
+
+                    if (httpResult.IsSuccessStatusCode)
+                    {
+                        var name = shipData.DisplayName;
+                        var message = await httpResult.Content.ReadFromJsonAsync<ScrapResponse>(_serializerOptions);
+
+                        if (_navManager.Uri.EndsWith("/map/" + shipData.ServerId))
+                            _navManager.NavigateTo(_navManager.BaseUri + "/map/");
+
+                        _ = _shipInfo.RefreshShipData();
+                        _ = _userInfo.RefreshData();
+
+                        _console.WriteLine("Ship " + name + " has been scrapped.");
+                        _console.WriteLine(message.Success);
+
+                        return CommandResult.SUCCESS;
+                    }
+                    else
+                    {
+                        var error = await httpResult.Content.ReadFromJsonAsync<ErrorResponse>(_serializerOptions);
+
+                        await _shipInfo.RefreshShipData();
+                        _console.WriteLine(error.Error.Message);
+                    }
                 }
                 else
                     _console.WriteLine("Invalid ship id. Please use number ids and not the full string id.");
