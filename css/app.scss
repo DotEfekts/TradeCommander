@@ -30,6 +30,7 @@ body {
     /* width */
     ::-webkit-scrollbar {
         width: 5px;
+        height: 5px;
     }
     /* Track */
     ::-webkit-scrollbar-track {
@@ -94,6 +95,72 @@ body {
             text-align: center;
             font-size: 30px;
             margin-top: 40px;
+        }
+    }
+
+    table {
+        th, td {
+            padding-left: 5px;
+            padding-right: 5px;
+            text-align: center;
+        }
+
+        th:first-child,
+        td:first-child {
+            text-align: left;
+        }
+
+        th:last-child,
+        td:last-child {
+            padding-right: 10px;
+        }
+    }
+
+    .table-nav {
+        display: flex;
+        margin: 10px 5px;
+        justify-content: flex-end;
+
+        a {
+            display: block;
+            border: solid 1px var(--content-color);
+            padding: 5px;
+            margin: 0 5px;
+            color: var(--content-color);
+            text-decoration: none;
+            position: relative;
+            text-align: center;
+            cursor: pointer;
+            user-select: none;
+
+            &[disabled] {
+                opacity: 0.2;
+                cursor: default;
+                pointer-events: none;
+            }
+
+            &.active:not([disabled]) {
+                color: var(--background-color);
+
+                div {
+                    background-color: var(--content-color);
+                }
+            }
+
+            div {
+                padding: 3px 5px;
+            }
+        }
+
+        input {
+            font-size: 1em;
+            width: 4em;
+            outline: none;
+            border: none;
+            background-color: transparent;
+            font-family: 'Share Tech Mono', monospace;
+            color: var(--content-color);
+            border: solid 1px var(--content-color);
         }
     }
 }

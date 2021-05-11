@@ -26,7 +26,8 @@ body {
   /* Handle */
   /* Handle on hover */ }
   body ::-webkit-scrollbar {
-    width: 5px; }
+    width: 5px;
+    height: 5px; }
   body ::-webkit-scrollbar-track {
     background: transparent; }
   body ::-webkit-scrollbar-thumb {
@@ -70,6 +71,50 @@ body {
       text-align: center;
       font-size: 30px;
       margin-top: 40px; }
+  #app table th, #app table td {
+    padding-left: 5px;
+    padding-right: 5px;
+    text-align: center; }
+  #app table th:first-child,
+  #app table td:first-child {
+    text-align: left; }
+  #app table th:last-child,
+  #app table td:last-child {
+    padding-right: 10px; }
+  #app .table-nav {
+    display: flex;
+    margin: 10px 5px;
+    justify-content: flex-end; }
+    #app .table-nav a {
+      display: block;
+      border: solid 1px var(--content-color);
+      padding: 5px;
+      margin: 0 5px;
+      color: var(--content-color);
+      text-decoration: none;
+      position: relative;
+      text-align: center;
+      cursor: pointer;
+      user-select: none; }
+      #app .table-nav a[disabled] {
+        opacity: 0.2;
+        cursor: default;
+        pointer-events: none; }
+      #app .table-nav a.active:not([disabled]) {
+        color: var(--background-color); }
+        #app .table-nav a.active:not([disabled]) div {
+          background-color: var(--content-color); }
+      #app .table-nav a div {
+        padding: 3px 5px; }
+    #app .table-nav input {
+      font-size: 1em;
+      width: 4em;
+      outline: none;
+      border: none;
+      background-color: transparent;
+      font-family: 'Share Tech Mono', monospace;
+      color: var(--content-color);
+      border: solid 1px var(--content-color); }
 
 #app > .loading {
   margin-left: 20px; }
