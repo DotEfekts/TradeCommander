@@ -75,7 +75,7 @@ namespace TradeCommander.CommandHandlers
                 else if (args.Length == 3 && (args[1].ToLower() == "commands" || args[1].ToLower() == "ships"))
                 {
                     _console.WriteLine("Displaying auto route commands.");
-                    _navManager.NavigateTo(_navManager.BaseUri + "routes/" + args[1].ToLower() + "/" + args[2]);
+                    _navManager.NavigateTo(_navManager.BaseUri + "routes/" + args[2].ToLower() + "/" + args[1]);
                     return CommandResult.SUCCESS;
                 }
             }
@@ -91,7 +91,6 @@ namespace TradeCommander.CommandHandlers
                 });
 
                 _console.WriteLine("New route created. Id: " + id + ".");
-                _navManager.NavigateTo(_navManager.BaseUri + "routes");
 
                 return CommandResult.SUCCESS;
             }
@@ -101,7 +100,6 @@ namespace TradeCommander.CommandHandlers
                 {
                     _routeInfo.DeleteRoute(route);
                     _console.WriteLine("Auto route deleted.");
-                    _navManager.NavigateTo(_navManager.BaseUri + "routes");
 
                     return CommandResult.SUCCESS;
                 }
@@ -129,7 +127,6 @@ namespace TradeCommander.CommandHandlers
 
                     _routeInfo.AddCommandToRoute(route.Id, index, string.Join(' ', commandArr));
 
-                    _navManager.NavigateTo(_navManager.BaseUri + "routes/commands/" + id);
                     _console.WriteLine("Command added successfully.");
 
                     return CommandResult.SUCCESS;
@@ -146,7 +143,6 @@ namespace TradeCommander.CommandHandlers
                     if (int.TryParse(args[2], out int index) && index > 0 && index <= route.Commands.Length)
                     {
                         _routeInfo.RemoveCommandFromRoute(route.Id, index);
-                        _navManager.NavigateTo(_navManager.BaseUri + "routes/commands/" + id);
                         _console.WriteLine("Command deleted successfully.");
                         return CommandResult.SUCCESS;
                     }
@@ -171,7 +167,6 @@ namespace TradeCommander.CommandHandlers
                             {
                                 _routeInfo.AddShipToRoute(route.Id, shipData);
                                 _console.WriteLine("Ship added to route.");
-                                _navManager.NavigateTo(_navManager.BaseUri + "routes/ships/" + id);
                             }
                             else
                                 _console.WriteLine("Ship provided is already on route.");
@@ -198,7 +193,6 @@ namespace TradeCommander.CommandHandlers
                         {
                             _routeInfo.RemoveShipFromRoute(route.Id, routeShip);
                             _console.WriteLine("Ship removed from route.");
-                            _navManager.NavigateTo(_navManager.BaseUri + "routes/ships/" + id);
                         }
                         else
                             _console.WriteLine("Ship provided is not currently on this route.");

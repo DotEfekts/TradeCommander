@@ -18,11 +18,11 @@
     },
     "Debug and Reload": {
       "commandName": "Executable",
-      "executablePath": "dotnet.exe",
-      "commandLineArgs": "watch run debug --launch-profile \"TradeCommander\"",
+      "executablePath": "cmd",
+      "commandLineArgs": "/C start chrome --remote-debugging-port=9222 --user-data-dir=\"C:\\Users\\Jack\\Development\\SpaceTraders\\BrowserData\" https://localhost:5001/ && dotnet watch run debug --launch-profile \"TradeCommander\"",
       "workingDirectory": "$(ProjectDir)",
-      "launchBrowser": false,
-      "nativeDebugging": false
+      "nativeDebugging": false,
+      "launchBrowser": false
     },
     "TradeCommander": {
       "commandName": "Project",

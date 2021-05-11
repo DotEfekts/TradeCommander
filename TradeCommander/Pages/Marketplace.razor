@@ -1,6 +1,10 @@
 ﻿@page "/markets/{Symbol}"
+@page "/ships/{Symbol}/market"
 @implements IDisposable
 @inject MarketProvider MarketProvider
+@inject ShipsProvider ShipsProvider
+@inject ConsoleOutput Console 
+@inject CommandManager CommandManager 
 
 <div class="layout-container">
     @if (market == null)
@@ -15,7 +19,7 @@
         }
         else
         {
-            <h3 class="body-title">@market.Symbol Market - Data Age: @(dataAge.Days)d @(dataAge.Hours)h @(dataAge.Minutes)m</h3>
+            <h3 class="body-title">@(ship != null ? ship.DisplayName + " - " : "")@market.Symbol Market - Data Age: @(dataAge.Days)d @(dataAge.Hours)h @(dataAge.Minutes)m</h3>
             <table class="cargo">
                 <thead>
                     <tr>
@@ -24,6 +28,11 @@
                         <th>Volume Per Unit</th>
                         <th>Buy Price</th>
                         <th>Sell Price</th>
+                        @if (ship != null)
+                        {
+                            <th>Quantity Onboard</th>
+                            <th></th>
+                        }
                     </tr>
                 </thead>
                 <tbody>
@@ -33,8 +42,19 @@
                         <td>@good.Symbol</td>
                         <td>@good.QuantityAvailable.ToString("N0")</td>
                         <td>@good.VolumePerUnit</td>
-                        <td>@((good.PricePerUnit + good.Spread).ToString("N0")) credits</td>
-                        <td>@((good.PricePerUnit - good.Spread).ToString("N0")) credits</td>
+                        <td>@((good.PricePerUnit + good.Spread).ToString("N0"))@(ship != null ? "" : " credits")</td>
+                        <td>@((good.PricePerUnit - good.Spread).ToString("N0"))@(ship != null ? "" : " credits")</td>
+                        @if (ship != null)
+                        {
+                            <td>@(ship.Ship.Cargo.FirstOrDefault(t => t.Good == good.Symbol)?.Quantity ?? 0)</td>
+                            <td>
+                                <div class="table-nav">
+                                    <ConfButton Label="@("\u202FBuy\u202F")" ConfirmingLabel="Conf" OnConfirm="async () => await ConfirmBuy(good.Symbol)"></ConfButton>
+                                    <input type="number" value="1" min="1" max="300" @onchange="@(e => quantities[good.Symbol] = int.Parse(e.Value.ToString()))" />
+                                    <ConfButton Label="Sell" ConfirmingLabel="Conf" OnConfirm="async () => await ConfirmSell(good.Symbol)"></ConfButton>
+                                </div>
+                            </td>
+                        }
                     </tr>
                     }
                 </tbody>
@@ -47,7 +67,9 @@
     [Parameter]
     public string Symbol { get; set; }
     private Market market = null;
+    private ShipData ship = null;
     private TimeSpan dataAge = new TimeSpan();
+    private Dictionary<string, int> quantities = new Dictionary<string, int>();
 
     protected override void OnInitialized()
     {
@@ -75,8 +97,30 @@
 
     private void UpdateMarketData()
     {
-        market = MarketProvider.GetMarket(Symbol);
+        if(ShipsProvider.TryGetShipData(Symbol, out var data)) {
+            ship = data;
+            market = MarketProvider.GetMarket(data.Ship.Location);
+        }
+        else
+            market = MarketProvider.GetMarket(Symbol);
+
         if (market != null)
             dataAge = DateTimeOffset.UtcNow.Subtract(market.RetrievedAt);
+    }
+
+    private async Task ConfirmBuy(string good)
+    {
+        quantities.TryGetValue(good, out int quantity);
+        if (quantity == 0) quantity = 1;
+        Console.WriteLine("");
+        await CommandManager.InvokeCommand("MARKET " + ship.Id + " buy " + good + " " + quantity);
+    }
+
+    private async Task ConfirmSell(string good)
+    {
+        quantities.TryGetValue(good, out int quantity);
+        if (quantity == 0) quantity = 1;
+        Console.WriteLine("");
+        await CommandManager.InvokeCommand("MARKET " + ship.Id + " sell " + good + " " + quantity);
     }
 }

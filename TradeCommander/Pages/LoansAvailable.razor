@@ -2,6 +2,8 @@
 @page "/loans"
 @inject HttpClient Http
 @inject JsonSerializerOptions SerializerOptions
+@inject ConsoleOutput Console 
+@inject CommandManager CommandManager
 
 <div class="layout-container">
     @if (loading)
@@ -25,6 +27,7 @@
                         <th>Collateral Required</th>
                         <th>Rate</th>
                         <th>Term Length</th>
+                        <th></th>
                     </tr>
                 </thead>
                 <tbody>
@@ -36,6 +39,11 @@
                         <td>@(loan.CollateralRequired ? "Yes" : "No")</td>
                         <td>@loan.Rate</td>
                         <td>@(loan.TermInDays)d</td>
+                        <td>
+                            <div class="table-nav">
+                                <ConfButton Label="Take Loan" ConfirmingLabel="@("\u202FConfirm?\u202F")" OnConfirm="async () => await ConfirmTake(loan.Type)"></ConfButton>
+                            </div>
+                        </td>
                     </tr>
                     }
                 </tbody>
@@ -68,5 +76,11 @@
         catch (Exception) { }
 
         loading = false;
+    }
+
+    private async Task ConfirmTake(string type)
+    {
+        Console.WriteLine("");
+        await CommandManager.InvokeCommand("LOAN take " + type, false);
     }
 }

@@ -3,6 +3,8 @@
 @page "/shipyard/{ShipType}"
 @inject HttpClient Http
 @inject JsonSerializerOptions SerializerOptions
+@inject ConsoleOutput Console 
+@inject CommandManager CommandManager
 
 <div class="layout-container">
     @if (loading)
@@ -18,7 +20,7 @@
         else if (ships != null)
         {
             <h3 class="body-title">Shipyard</h3>
-            <table class="shipyard">
+            <table class="shipyard has-nav">
                 <thead>
                     <tr>
                         <th>Type</th>
@@ -29,6 +31,7 @@
                         <th>Plating</th>
                         <th>Weapons</th>
                         <th>Average Cost</th>
+                        <th></th>
                     </tr>
                 </thead>
                 <tbody>
@@ -43,6 +46,11 @@
                         <td>@ship.Plating</td>
                         <td>@ship.Weapons</td>
                         <td>@ship.PurchaseLocations.Average(t => t.Price).ToString("N0") credits</td>
+                        <td>
+                            <div class="table-nav">
+                                <NavLink href="@("shipyard/" + ship.Type)"><div>Locations</div></NavLink>
+                            </div>
+                        </td>
                     </tr>
                     }
                 </tbody>
@@ -56,6 +64,7 @@
                     <tr>
                         <th>Location</th>
                         <th>Price</th>
+                        <th></th>
                     </tr>
                 </thead>
                 <tbody>
@@ -64,6 +73,11 @@
                         <tr>
                             <td>@location.Location</td>
                             <td>@location.Price.ToString("N0") credits</td>
+                            <td>
+                                <div class="table-nav">
+                                    <ConfButton Label="Purchase" ConfirmingLabel="Confirm?" OnConfirm="async () => await ConfirmBuy(location.Location)"></ConfButton>
+                                </div>
+                            </td>
                         </tr>
                     }
                 </tbody>
@@ -107,5 +121,11 @@
         catch (Exception) { }
 
         loading = false;
+    }
+
+    private async Task ConfirmBuy(string location)
+    {
+        Console.WriteLine("");
+        await CommandManager.InvokeCommand("SHIPYARD buy " + ShipType + " " + location, false);
     }
 }

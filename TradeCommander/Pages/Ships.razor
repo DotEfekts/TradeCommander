@@ -1,5 +1,7 @@
 ﻿@implements IDisposable
 @inject ShipsProvider ShipProvider
+@inject ConsoleOutput Console 
+@inject CommandManager CommandManager 
 
 <div class="layout-container">
     @if (ships.Length == 0)
@@ -26,20 +28,29 @@
                     <th>Speed</th>
                     <th>Fuel</th>
                     <th>Status</th>
+                    <th></th>
                 </tr>
             </thead>
             <tbody>
                 @foreach (var shipData in ships.OrderBy(s => s.Id))
                 {
-                    <tr>
-                        <td>@shipData.Id</td>
-                        <td>@shipData.DisplayName</td>
-                        <td>@shipData.Ship.Type</td>
-                        <td>@shipData.Ship.Cargo.Sum(t => t.TotalVolume).ToString("N0")/@shipData.Ship.MaxCargo.ToString("N0")@(shipData.Ship.Cargo.Any(t => t.Quantity > 0 && t.TotalVolume == 0) ? " +" + shipData.Ship.Cargo.Where(t => t.TotalVolume == 0).Sum(t => t.Quantity).ToString("N0") : "")</td>
-                        <td>@shipData.Ship.Speed</td>
-                        <td>@(shipData.Ship.Cargo.FirstOrDefault(t => t.Good == "FUEL")?.Quantity.ToString("N0") ?? "0")</td>
-                        <td>@GetShipStatus(shipData.Ship)</td>
-                    </tr>
+                <tr>
+                    <td>@shipData.Id</td>
+                    <td>@shipData.DisplayName</td>
+                    <td>@shipData.Ship.Type</td>
+                    <td>@shipData.Ship.Cargo.Sum(t => t.TotalVolume).ToString("N0")/@shipData.Ship.MaxCargo.ToString("N0")@(shipData.Ship.Cargo.Any(t => t.Quantity > 0 && t.TotalVolume == 0) ? " +" + shipData.Ship.Cargo.Where(t => t.TotalVolume == 0).Sum(t => t.Quantity).ToString("N0") : "")</td>
+                    <td>@shipData.Ship.Speed</td>
+                    <td>@(shipData.Ship.Cargo.FirstOrDefault(t => t.Good == "FUEL")?.Quantity.ToString("N0") ?? "0")</td>
+                    <td>@GetShipStatus(shipData.Ship)</td>
+                    <td>
+                        <div class="table-nav">
+                            <NavLink href="@("ships/" + shipData.ServerId + "/fly")" disabled="@string.IsNullOrWhiteSpace(shipData.Ship.Location)"><div>Fly</div></NavLink>
+                            <NavLink href="@("ships/" + shipData.ServerId + "/map")"><div>Map</div></NavLink>
+                            <NavLink href="@("ships/" + shipData.ServerId + "/cargo")"><div>Cargo</div></NavLink>
+                            <NavLink href="@("ships/" + shipData.ServerId + "/market")" @onclick="() => OpenMarket(shipData.Id)" disabled="@string.IsNullOrWhiteSpace(shipData.Ship.Location)"><div>Market</div></NavLink>
+                        </div>
+                    </td>
+                </tr>
                 }
             </tbody>
         </table>
@@ -92,5 +103,11 @@
         {
             return "Docked - " + ship.Location;
         }
+    }
+
+    private async void OpenMarket(int shipId)
+    {
+        Console.WriteLine("");
+        await CommandManager.InvokeCommand("MARKET list " + shipId);
     }
 }

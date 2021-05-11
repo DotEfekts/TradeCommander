@@ -4,6 +4,7 @@
 @page "/"
 @page "/map"
 @page "/map/{Symbol}"
+@page "/ships/{Symbol}/map"
 @implements IDisposable
 @inject IJSRuntime JS
 @inject HttpClient Http
@@ -61,7 +62,8 @@
 
     protected override async Task OnParametersSetAsync()
     {
-        if (!NavManager.ToBaseRelativePath(NavManager.Uri).StartsWith("map"))
+        var currUri = NavManager.ToBaseRelativePath(NavManager.Uri);
+        if (currUri == "" || currUri == "/")
             NavManager.NavigateTo(NavManager.BaseUri + "map");
 
         await UpdateLocationData(false);

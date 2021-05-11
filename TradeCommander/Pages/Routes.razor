@@ -21,6 +21,7 @@
                     <th>Name</th>
                     <th>Commands in Route</th>
                     <th>Ships on Route</th>
+                    <td></td>
                 </tr>
             </thead>
             <tbody>
@@ -31,6 +32,12 @@
                         <td>@routeData.DisplayName</td>
                         <td>@routeData.Commands.Length</td>
                         <td>@routeData.Ships.Length</td>
+                        <td>
+                            <div class="table-nav">
+                                <NavLink href="@("routes/" + routeData.Id + "/commands")"><div>Commands</div></NavLink>
+                                <NavLink href="@("routes/" + routeData.Id + "/ships")"><div>Ships</div></NavLink>
+                            </div>
+                        </td>
                     </tr>
                 }
             </tbody>

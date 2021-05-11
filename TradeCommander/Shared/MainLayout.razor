@@ -1,5 +1,4 @@
 ﻿@using Blazored.LocalStorage;
-@using TradeCommander.CommandHandlers;
 @inherits LayoutComponentBase
 @implements IDisposable
 @inject HttpClient Http
@@ -9,6 +8,7 @@
 @inject IJSRuntime JS
 @inject ISyncLocalStorageService LocalStorage
 @inject SettingsProvider SettingsProvider
+@inject NavigationManager NavManager
 
 
 @if (!gameOffline.HasValue || (!gameOffline.Value && !UserProvider.StartingDetailsChecked))
@@ -52,13 +52,25 @@ else
                     </div>
                 </div>
                 <div class="command-input">
-                    <span>&gt;</span><input type="text" name="command-input" id="command-input" @bind="commandInput" @bind:event="oninput" @onkeydown="HandleInput" @ref="commandInputElement" />
+                    <span>&gt;</span><input type="text" name="command-input" id="command-input" @bind="commandInput" @bind:event="oninput" @onkeydown="HandleInput" @ref="commandInputElement" autocomplete="off" />
                 </div>
             </div>
         </div>
         <div class="body">
             @if (UserProvider.UserDetails != null)
             {
+                <div class="top-nav">
+                    <NavLink href="systems" class="@(GetSystemsClass())"><div>Systems</div></NavLink>
+                    <NavLink href="shipyard"><div>Shipyard</div></NavLink>
+                    <div class="sub-nav">
+                        <NavLink href="loans"><div>Loans</div></NavLink>
+                        <div class="dropdown">
+                            <NavLink href="loans/owed"><div>Owed Loans</div></NavLink>
+                            <NavLink href="loans/paid"><div>Paid Loans</div></NavLink>
+                        </div>
+                    </div>
+                    <NavLink href="routes"><div>Auto-Routes</div></NavLink>
+                </div>
                 <div class="content">
                     @Body
                 </div>
@@ -276,5 +288,15 @@ else
             await JS.InvokeVoidAsync("setBodyClass", "crt");
 
         StateHasChanged();
+    }
+
+    private string GetSystemsClass()
+    {
+        var url = NavManager.ToBaseRelativePath(NavManager.Uri).ToLower();
+
+        if (url == "" || url == "map" || url.StartsWith("map/") || url.StartsWith("markets/"))
+            return "active";
+
+        return "";
     }
 }

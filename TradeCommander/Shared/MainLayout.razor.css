@@ -12,9 +12,45 @@
     width: 50%;
     display: flex;
     flex-direction: column; }
+    .page .body .top-nav {
+      display: flex;
+      margin: 10px 5px; }
+      .page .body .top-nav ::deep a {
+        flex: 1 1 auto;
+        display: block;
+        border: solid 1px var(--content-color);
+        padding: 5px;
+        margin: 0 5px;
+        color: var(--content-color);
+        text-decoration: none;
+        position: relative;
+        text-align: center; }
+        .page .body .top-nav ::deep a.active {
+          color: var(--background-color); }
+          .page .body .top-nav ::deep a.active div {
+            background-color: var(--content-color); }
+        .page .body .top-nav ::deep a div {
+          padding: 5px; }
+      .page .body .top-nav .sub-nav {
+        flex: 1 1 auto;
+        position: relative; }
+        .page .body .top-nav .sub-nav:hover .dropdown {
+          display: block; }
+        .page .body .top-nav .sub-nav .dropdown {
+          display: none;
+          position: absolute;
+          left: 0;
+          top: 100%;
+          width: 100%; }
+          .page .body .top-nav .sub-nav .dropdown ::deep a {
+            background-color: var(--background-color);
+            margin-top: 5px; }
+            .page .body .top-nav .sub-nav .dropdown ::deep a div {
+              filter: drop-shadow(0 0 1px var(--content-color)); }
     .page .body .content {
       flex: 1;
-      max-height: 100%; }
+      max-height: 100%;
+      overflow: auto; }
   .page .info {
     width: 50%;
     display: flex;

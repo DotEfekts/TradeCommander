@@ -67,6 +67,7 @@ namespace TradeCommander.CommandHandlers
             else if (!background && args.Length == 2 && args[0].ToLower() == "list")
             {
                 var symbol = args[1].ToUpper();
+                string shipId = null;
 
                 if (_shipInfo.TryGetShipDataByLocalId(args[1], out var shipData))
                 {
@@ -77,6 +78,7 @@ namespace TradeCommander.CommandHandlers
                     }
 
                     symbol = shipData.Ship.Location;
+                    shipId = shipData.ServerId;
                 }
 
                 var canGetLive = _shipInfo.GetShipData().Any(t => t.Ship.Location == symbol);
@@ -89,7 +91,10 @@ namespace TradeCommander.CommandHandlers
                 if (_marketInfo.HasMarket(symbol))
                 {
                     _console.WriteLine("Displaying market data for " + symbol + ".");
-                    _navManager.NavigateTo(_navManager.BaseUri + "markets/" + symbol);
+                    if(shipId != null)
+                        _navManager.NavigateTo(_navManager.BaseUri + "ships/" + shipId + "/market");
+                    else
+                        _navManager.NavigateTo(_navManager.BaseUri + "markets/" + symbol);
                     return CommandResult.SUCCESS;
                 }
                 else
@@ -180,7 +185,6 @@ namespace TradeCommander.CommandHandlers
 
                                         if (!background)
                                         {
-                                            _navManager.NavigateTo(_navManager.BaseUri + "ships/cargo/" + shipData.ServerId);
                                             _console.WriteLine(quantityProcessing + " units of cargo sold successfully. Total made: " + saleResult.Order.Total + " credits.");
                                         }
 
@@ -339,7 +343,6 @@ namespace TradeCommander.CommandHandlers
 
                                     if (!background)
                                     {
-                                        _navManager.NavigateTo(_navManager.BaseUri + "ships/cargo/" + shipData.ServerId);
                                         _console.WriteLine(quantityProcessing + " units of cargo purchased successfully. Total cost: " + purchaseResult.Order.Total + " credits.");
                                     }
 

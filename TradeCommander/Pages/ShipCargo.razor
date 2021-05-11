@@ -1,6 +1,8 @@
-﻿@page "/ships/cargo/{ShipId}"
+﻿@page "/ships/{ShipId}/cargo"
 @implements IDisposable
 @inject ShipsProvider ShipProvider
+@inject ConsoleOutput Console 
+@inject CommandManager CommandManager 
 
 <div class="layout-container">
     @if (shipData == null)
@@ -30,6 +32,7 @@
                         <th>Quantity</th>
                         <th>Volume Per Unit</th>
                         <th>Total Volume</th>
+                        <th></th>
                     </tr>
                 </thead>
                 <tbody>
@@ -40,6 +43,12 @@
                         <td>@cargo.Quantity.ToString("N0")</td>
                         <td>@(cargo.TotalVolume / cargo.Quantity)</td>
                         <td>@cargo.TotalVolume.ToString("N0")</td>
+                        <td>
+                            <div class="table-nav">
+                                <input type="number" value="1" min="1" max="@cargo.Quantity" @onchange="@(e => quantities[cargo.Good] = int.Parse(e.Value.ToString()))" />
+                                <ConfButton Label="Jettison" ConfirmingLabel="Confirm?" OnConfirm="async () => await ConfirmJettison(cargo.Good)"></ConfButton>
+                            </div>
+                        </td>
                     </tr>
                     }
                 </tbody>
@@ -52,6 +61,7 @@
     [Parameter]
     public string ShipId { get; set; }
     private ShipData shipData = null;
+    private Dictionary<string, int> quantities = new Dictionary<string, int>();
 
     protected override void OnInitialized()
     {
@@ -82,5 +92,13 @@
     {
         if(ShipProvider.TryGetShipData(ShipId, out var data))
             shipData = data;
+    }
+
+    private async Task ConfirmJettison(string good)
+    {
+        quantities.TryGetValue(good, out int quantity);
+        if (quantity == 0) quantity = 1;
+        Console.WriteLine("");
+        await CommandManager.InvokeCommand("SHIP " + shipData.Id + " jettison " + good + " " + quantity);
     }
 }

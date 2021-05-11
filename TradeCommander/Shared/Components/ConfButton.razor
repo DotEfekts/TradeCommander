@@ -1,0 +1,60 @@
+﻿@namespace TradeCommander.Shared.Components
+@using System.Timers
+
+<a @onclick="() => Confirm()" class="@(confirming > 0 ? "active" : "")" disabled="@locked"><div>@(confirming > 0 ? ConfirmingLabel : Label)</div></a>
+
+@code {
+    [Parameter]
+    public string Label { get; set; } = "";
+    [Parameter]
+    public string ConfirmingLabel { get; set; } = "";
+    [Parameter]
+    public EventCallback OnConfirm { get; set; }
+
+    private const int UPDATE_INTERVAL = 500;
+    private const int CONFIRM_TIME = 3000;
+    private System.Timers.Timer timer;
+
+    private int confirming = 0;
+    private bool locked = false;
+
+    protected override void OnInitialized()
+    {
+
+        timer = new Timer(UPDATE_INTERVAL);
+        timer.Elapsed += UpdateConfirmation;
+        timer.Enabled = true;
+
+        base.OnInitialized();
+    }
+
+    public void Dispose()
+    {
+        timer.Elapsed -= UpdateConfirmation;
+        timer.Dispose();
+    }
+
+    private async void Confirm()
+    {
+        if (confirming == 0 && !locked)
+            confirming = CONFIRM_TIME / UPDATE_INTERVAL;
+        else if (!locked)
+        {
+            locked = true;
+            await OnConfirm.InvokeAsync();
+            locked = false;
+            confirming = 0;
+            this.StateHasChanged();
+        }
+    }
+
+    private void UpdateConfirmation(object sender, ElapsedEventArgs args)
+    {
+        if (!locked && confirming > 0)
+        {
+            confirming--;
+            if (confirming == 0)
+                this.StateHasChanged();
+        }
+    }
+}

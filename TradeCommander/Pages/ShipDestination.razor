@@ -1,0 +1,143 @@
+﻿@using System.Text.Json
+@page "/ships/{ShipId}/fly"
+@inject HttpClient Http
+@inject JsonSerializerOptions SerializerOptions
+@inject ShipsProvider ShipProvider
+@inject ConsoleOutput Console 
+@inject CommandManager CommandManager 
+
+<div class="layout-container">
+    @if (scanning)
+    {
+        <h3 class="body-title">Scanning...</h3>
+    }
+    else if (shipData == null)
+    {
+        <h3 class="body-title">Invalid ship id provided.</h3>
+    }
+    else
+    {
+        if (string.IsNullOrWhiteSpace(shipData.Ship.Location))
+        {
+            <h3 class="body-title">Ship is in flight.</h3>
+        }
+        else if (locations == null)
+        {
+            <h3 class="body-title">Scan failed. (Is the ship in a system?)</h3>
+        }
+        else
+        {
+            <h3 class="body-title">Displaying Locations - @shipData.DisplayName</h3>
+            <table class="scan">
+                <thead>
+                    <tr>
+                        <th>Symbol</th>
+                        <th>Name</th>
+                        <th>Type</th>
+                        <th>X</th>
+                        <th>Y</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var location in locations)
+                    {
+                    <tr>
+                        <td>@location.Symbol</td>
+                        <td>@location.Name</td>
+                        <td>@location.Type</td>
+                        <td>@location.X</td>
+                        <td>@location.Y</td>
+                        <td>
+                            <div class="table-nav">
+                                @if (shipData.Ship.Location == location.Symbol)
+                                {
+                                    @if(location.Type == "WORMHOLE")
+                                    {
+                                        <ConfButton Label="Warp" ConfirmingLabel="Conf" OnConfirm="async () => await ConfirmWarp()"></ConfButton>
+                                    }
+                                    else
+                                    {
+                                        <NavLink disabled="true"><div>Dock</div></NavLink>
+                                    }
+                                }
+                                else
+                                {
+                                    <ConfButton Label="@("\u202FFly\u202F")" ConfirmingLabel="Conf" OnConfirm="async () => await ConfirmFlight(location.Symbol)"></ConfButton>
+                                }
+                            </div>
+                        </td>
+                    </tr>
+                    }
+                </tbody>
+            </table>
+        }
+    }
+</div>
+
+@code
+{
+    [Parameter]
+    public string ShipId { get; set; }
+    private bool scanning = true;
+    private ShipData shipData = null;
+    string system = null;
+    private Location[] locations = null;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        ShipProvider.ShipsUpdated += ShipsUpdated;
+
+        await UpdateLocationData();
+        base.OnParametersSet();
+    }
+
+    private async void ShipsUpdated(object sender, ShipEventArgs args)
+    {
+        await UpdateLocationData();
+        StateHasChanged();
+    }
+
+    private async Task UpdateLocationData()
+    {
+        scanning = shipData == null;
+
+        if (ShipProvider.TryGetShipData(ShipId, out var data))
+            shipData = data;
+
+
+        if (shipData != null && !string.IsNullOrWhiteSpace(shipData.Ship.Location))
+        {
+            var newSystem = shipData.Ship.Location.Split('-')[0].ToUpper();
+            if(newSystem != system)
+            {
+                try
+                {
+                    var locationInfo = await Http.GetFromJsonAsync<SystemResponse>("/game/systems/" + newSystem + "/locations", SerializerOptions);
+                    locations = locationInfo?.Locations;
+                    system = newSystem;
+                }
+                catch (Exception) { }
+            }
+        }
+        else
+        {
+            system = null;
+            locations = null;
+        }
+
+        scanning = false;
+    }
+
+    private async Task ConfirmWarp()
+    {
+        Console.WriteLine("");
+        await CommandManager.InvokeCommand("SHIP " + shipData.Id + " warp");
+    }
+
+    private async Task ConfirmFlight(string location)
+    {
+        Console.WriteLine("");
+        await CommandManager.InvokeCommand("SHIP " + shipData.Id + " fly " + location);
+    }
+}

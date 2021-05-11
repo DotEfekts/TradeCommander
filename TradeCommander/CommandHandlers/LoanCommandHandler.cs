@@ -79,12 +79,13 @@ namespace TradeCommander.CommandHandlers
                     Type = args[1].ToUpper()
                 });
 
-                _stateProvider.TriggerUpdate(this, "loansUpdated");
 
                 if (httpResult.IsSuccessStatusCode)
                 {
                     var details = await httpResult.Content.ReadFromJsonAsync<LoanResponse>(_serializerOptions);
                     var credits = details.Credits - _userInfo.UserDetails.Credits;
+
+                    _stateProvider.TriggerUpdate(this, "loansUpdated");
 
                     _userInfo.SetCredits(details.Credits);
                     _console.WriteLine("Loan taken successfully. Loan amount: " + credits + " credits.");
@@ -93,9 +94,8 @@ namespace TradeCommander.CommandHandlers
                 }
                 else
                 {
-                    //Uncomment when error messages are fixed.
-                    //var error = await httpResult.Content.ReadFromJsonAsync<ErrorResponse>(_serializerOptions);
-                    _console.WriteLine("An error occurred while attempting to take the loan.");
+                    var error = await httpResult.Content.ReadFromJsonAsync<ErrorResponse>(_serializerOptions);
+                    _console.WriteLine(error.Error.Message);
                 }
 
                 return CommandResult.FAILURE;
@@ -104,12 +104,13 @@ namespace TradeCommander.CommandHandlers
             {
                 using var httpResult = await _http.PutAsJsonAsync("/users/" + _userInfo.Username + "/loans/" + args[1], new { });
 
-                _stateProvider.TriggerUpdate(this, "loansUpdated");
 
                 if (httpResult.IsSuccessStatusCode)
                 {
                     var details = await httpResult.Content.ReadFromJsonAsync<DetailsResponse>(_serializerOptions);
                     var payment = _userInfo.UserDetails.Credits - details.User.Credits;
+
+                    _stateProvider.TriggerUpdate(this, "loansUpdated");
 
                     _userInfo.SetCredits(details.User.Credits);
                     _console.WriteLine("Loan paid successfully. Payment amount: " + payment + " credits.");

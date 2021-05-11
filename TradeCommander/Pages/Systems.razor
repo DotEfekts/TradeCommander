@@ -3,6 +3,7 @@
 @page "/systems/{SystemSymbol}"
 @inject HttpClient Http
 @inject JsonSerializerOptions SerializerOptions
+@inject MarketProvider MarketProvider
 
 <div class="layout-container">
     @if (scanning)
@@ -24,16 +25,23 @@
                         <th>Symbol</th>
                         <th>Name</th>
                         <th>Locations</th>
+                        <th></th>
                     </tr>
                 </thead>
                 <tbody>
                     @foreach (var system in systems)
                     {
-                        <tr>
-                            <td>@system.Symbol</td>
-                            <td>@system.Name</td>
-                            <td>@system.Locations.Length</td>
-                        </tr>
+                    <tr>
+                        <td>@system.Symbol</td>
+                        <td>@system.Name</td>
+                        <td>@system.Locations.Length</td>
+                        <td>
+                            <div class="table-nav">
+                                <NavLink href="@("map/" + system.Symbol)"><div>Map</div></NavLink>
+                                <NavLink href="@("systems/" + system.Symbol)"><div>Locations</div></NavLink>
+                            </div>
+                        </td>
+                    </tr>
                     }
                 </tbody>
             </table>
@@ -49,6 +57,7 @@
                         <th>Type</th>
                         <th>X</th>
                         <th>Y</th>
+                        <th></th>
                     </tr>
                 </thead>
                 <tbody>
@@ -60,6 +69,11 @@
                         <td>@location.Type</td>
                         <td>@location.X</td>
                         <td>@location.Y</td>
+                        <td>
+                            <div class="table-nav">
+                                <NavLink href="@("markets/" + location.Symbol)" disabled="@(!MarketProvider.HasMarket(location.Symbol))"><div>@(MarketProvider.HasMarket(location.Symbol) ? "\u202FMarket\u202F" : "No Data")</div></NavLink>
+                            </div>
+                        </td>
                     </tr>
                     }
                 </tbody>

@@ -15,9 +15,65 @@
         display: flex;
         flex-direction: column;
 
+        .top-nav {
+            display: flex;
+            margin: 10px 5px;
+
+            ::deep a {
+                flex: 1 1 auto;
+                display: block;
+                border: solid 1px var(--content-color);
+                padding: 5px;
+                margin: 0 5px;
+                color: var(--content-color);
+                text-decoration: none;
+                position: relative;
+                text-align: center;
+
+                &.active {
+                    color: var(--background-color);
+
+                    div {
+                        background-color: var(--content-color);
+                    }
+                }
+
+                div {
+                    padding: 5px;
+                }
+            }
+
+            .sub-nav {
+                flex: 1 1 auto;
+                position: relative;
+
+                &:hover .dropdown {
+                    display: block;
+                }
+
+                .dropdown {
+                    display: none;
+                    position: absolute;
+                    left: 0;
+                    top: 100%;
+                    width: 100%;
+
+                    ::deep a {
+                        background-color: var(--background-color);
+                        margin-top: 5px;
+
+                        div {
+                            filter: drop-shadow(0 0 1px var(--content-color));
+                        }
+                    }
+                }
+            }
+        }
+
         .content {
             flex: 1;
             max-height: 100%;
+            overflow: auto;
         }
     }
 

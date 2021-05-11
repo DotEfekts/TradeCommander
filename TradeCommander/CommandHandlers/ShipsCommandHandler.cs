@@ -64,7 +64,7 @@ namespace TradeCommander.CommandHandlers
                 if (_shipInfo.TryGetShipDataByLocalId(args[0], out var shipData))
                 {
                     _console.WriteLine("Displaying local map for " + shipData.DisplayName + ".");
-                    _navManager.NavigateTo(_navManager.BaseUri + "map/" + shipData.ServerId);
+                    _navManager.NavigateTo(_navManager.BaseUri + "ships/" + shipData.ServerId + "/map");
                     return CommandResult.SUCCESS;
                 }
                 else
@@ -76,7 +76,7 @@ namespace TradeCommander.CommandHandlers
                 if (_shipInfo.TryGetShipDataByLocalId(args[0], out var shipData))
                 {
                     _console.WriteLine("Displaying cargo for " + shipData.DisplayName + ".");
-                    _navManager.NavigateTo(_navManager.BaseUri + "ships/cargo/" + shipData.ServerId);
+                    _navManager.NavigateTo(_navManager.BaseUri + "ships/" + shipData.ServerId + "/cargo");
                     return CommandResult.SUCCESS;
                 }
                 else
@@ -104,7 +104,6 @@ namespace TradeCommander.CommandHandlers
                             if (!background)
                             {
                                 _console.WriteLine("Flight started successfully. Destination: " + args[2].ToUpper() + ".");
-                                _navManager.NavigateTo(_navManager.BaseUri + "map/" + shipData.ServerId);
                             }
 
                             return CommandResult.SUCCESS;
@@ -155,7 +154,6 @@ namespace TradeCommander.CommandHandlers
                             if (!background)
                             {
                                 _console.WriteLine("Warp started successfully. Destination: " + flightResult.FlightPlan.Destination + ".");
-                                _navManager.NavigateTo(_navManager.BaseUri + "map/" + flightResult.FlightPlan.Destination.Split("-")[0]);
                             }
 
                             return CommandResult.SUCCESS;
@@ -234,7 +232,6 @@ namespace TradeCommander.CommandHandlers
                                             _shipInfo.UpdateShipCargo(transferResult.ToShip.Id, transferResult.ToShip.Cargo);
 
                                             _console.WriteLine(quantity + " units of " + cargo.Good + " transferred from " + shipData.DisplayName + " to " + shipToData.DisplayName + ".");
-                                            _navManager.NavigateTo(_navManager.BaseUri + "ships/cargo/" + shipData.ServerId);
 
                                             return CommandResult.SUCCESS;
                                         }
@@ -296,7 +293,6 @@ namespace TradeCommander.CommandHandlers
                                 _shipInfo.UpdateShipCargo(shipData.ServerId, cargoToAdd.ToArray());
 
                                 _console.WriteLine(quantity + " units of " + cargo.Good + " jettisoned. " + jettisonResult.QuantityRemaining + " units remaining.");
-                                _navManager.NavigateTo(_navManager.BaseUri + "ships/cargo/" + shipData.ServerId);
 
                                 return CommandResult.SUCCESS;
                             }

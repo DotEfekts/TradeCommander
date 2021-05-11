@@ -13,7 +13,7 @@
             highlightedText = document.selection.createRange().text;
         }
 
-        if (!highlightedText || highlightedText === "")
+        if (!(e.srcElement instanceof HTMLInputElement) && (!highlightedText || highlightedText === ""))
             inputEl.focus();
     })
 }
