@@ -70,7 +70,7 @@
 
         try
         {
-            var loanResponse = await Http.GetFromJsonAsync<LoansAvailableResponse>("/game/loans", SerializerOptions);
+            var loanResponse = await Http.GetFromJsonAsync<LoansAvailableResponse>("/types/loans", SerializerOptions);
             loans = loanResponse?.Loans;
         }
         catch (Exception) { }

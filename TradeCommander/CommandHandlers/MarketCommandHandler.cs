@@ -14,7 +14,7 @@ namespace TradeCommander.CommandHandlers
     public class MarketCommandHandler : ICommandHandlerAsync
     {
         private readonly UserProvider _userInfo;
-        private readonly ShipsProvider _shipInfo;
+        private readonly ShipsProvider _shipProvider;
         private readonly MarketProvider _marketInfo;
         private readonly ConsoleOutput _console;
         private readonly NavigationManager _navManager;
@@ -25,7 +25,7 @@ namespace TradeCommander.CommandHandlers
 
         public MarketCommandHandler(
             UserProvider userInfo,
-            ShipsProvider shipInfo,
+            ShipsProvider shipProvider,
             MarketProvider marketInfo,
             ConsoleOutput console,
             NavigationManager navManager,
@@ -34,7 +34,7 @@ namespace TradeCommander.CommandHandlers
             )
         {
             _userInfo = userInfo;
-            _shipInfo = shipInfo;
+            _shipProvider = shipProvider;
             _marketInfo = marketInfo;
             _console = console;
             _navManager = navManager;
@@ -69,7 +69,7 @@ namespace TradeCommander.CommandHandlers
                 var symbol = args[1].ToUpper();
                 string shipId = null;
 
-                if (_shipInfo.TryGetShipDataByLocalId(args[1], out var shipData))
+                if (_shipProvider.TryGetShipDataByLocalId(args[1], out var shipData))
                 {
                     if (string.IsNullOrWhiteSpace(shipData.Ship.Location))
                     {
@@ -81,7 +81,7 @@ namespace TradeCommander.CommandHandlers
                     shipId = shipData.ServerId;
                 }
 
-                var canGetLive = _shipInfo.GetShipData().Any(t => t.Ship.Location == symbol);
+                var canGetLive = _shipProvider.GetShipData().Any(t => t.Ship.Location == symbol);
                 if (canGetLive)
                 {
                     await _marketInfo.RefreshMarketData(symbol, false);
@@ -104,7 +104,7 @@ namespace TradeCommander.CommandHandlers
             }
             else if (args.Length == 4 && args[1].ToLower() == "buy")
             {
-                if (_shipInfo.TryGetShipDataByLocalId(args[0], out var shipData))
+                if (_shipProvider.TryGetShipDataByLocalId(args[0], out var shipData))
                 {
                     if (!string.IsNullOrWhiteSpace(shipData.Ship.Location))
                     {
@@ -126,7 +126,7 @@ namespace TradeCommander.CommandHandlers
             }
             else if (args.Length == 4 && args[1].ToLower() == "sell")
             {
-                if (_shipInfo.TryGetShipDataByLocalId(args[0], out var shipData))
+                if (_shipProvider.TryGetShipDataByLocalId(args[0], out var shipData))
                 {
                     if (!string.IsNullOrWhiteSpace(shipData.Ship.Location))
                     {
@@ -169,7 +169,7 @@ namespace TradeCommander.CommandHandlers
                                     var quantityProcessing = Math.Min(TRADE_CAP, quantityRemaining);
                                     quantityRemaining -= quantityProcessing;
 
-                                    var httpResult = await _http.PostAsJsonAsync("/users/" + _userInfo.Username + "/sell-orders", new TransactionRequest
+                                    var httpResult = await _http.PostAsJsonAsync("/my/sell-orders", new TransactionRequest
                                     {
                                         ShipId = shipData.ServerId,
                                         Good = good.Good,
@@ -181,7 +181,7 @@ namespace TradeCommander.CommandHandlers
                                         var saleResult = await httpResult.Content.ReadFromJsonAsync<TransactionResult>(_serializerOptions);
 
                                         _userInfo.SetCredits(saleResult.Credits);
-                                        _shipInfo.UpdateShipCargo(saleResult.Ship.Id, saleResult.Ship.Cargo);
+                                        _shipProvider.UpdateShipCargo(saleResult.Ship.Id, saleResult.Ship.Cargo);
 
                                         if (!background)
                                         {
@@ -272,7 +272,7 @@ namespace TradeCommander.CommandHandlers
             var response = await _marketInfo.RefreshMarketData(shipData.Ship.Location, false);
             if (response != null)
             {
-                var market = response.Location.Marketplace;
+                var market = response.Marketplace;
                 var good = market.FirstOrDefault(t => t.Symbol == symbol.ToUpper());
 
                 if (good != null)
@@ -327,7 +327,7 @@ namespace TradeCommander.CommandHandlers
 
                                 var quantityProcessing = Math.Min(TRADE_CAP, quantity);
 
-                                using var httpResult = await _http.PostAsJsonAsync("/users/" + _userInfo.Username + "/purchase-orders", new TransactionRequest
+                                using var httpResult = await _http.PostAsJsonAsync("/my/purchase-orders", new TransactionRequest
                                 {
                                     ShipId = shipData.ServerId,
                                     Good = good.Symbol,
@@ -339,7 +339,7 @@ namespace TradeCommander.CommandHandlers
                                     var purchaseResult = await httpResult.Content.ReadFromJsonAsync<TransactionResult>(_serializerOptions);
 
                                     _userInfo.SetCredits(purchaseResult.Credits);
-                                    _shipInfo.UpdateShipCargo(purchaseResult.Ship.Id, purchaseResult.Ship.Cargo);
+                                    _shipProvider.UpdateShipCargo(purchaseResult.Ship.Id, purchaseResult.Ship.Cargo);
 
                                     if (!background)
                                     {

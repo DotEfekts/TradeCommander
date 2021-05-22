@@ -74,7 +74,7 @@ namespace TradeCommander.CommandHandlers
                 _console.WriteLine("Scanning location: " + args[1].ToUpper() + ".");
                 try
                 {
-                    var locationInfo = await _http.GetFromJsonAsync<LocationResponse>("/game/locations/" + args[1].ToUpper(), _serializerOptions);
+                    var locationInfo = await _http.GetFromJsonAsync<LocationResponse>("/locations/" + args[1].ToUpper(), _serializerOptions);
                     await _console.WriteLine("Symbol: " + locationInfo.Location.Symbol, 0);
                     await _console.WriteLine("Type: " + locationInfo.Location.Type, 100);
                     await _console.WriteLine("Name: " + locationInfo.Location.Name, 100);

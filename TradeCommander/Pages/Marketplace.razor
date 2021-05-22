@@ -36,14 +36,14 @@
                     </tr>
                 </thead>
                 <tbody>
-                    @foreach (var good in market.Marketplace)
+                    @foreach (var good in market.Marketplace.OrderBy(t => t.Symbol))
                     {
                     <tr>
                         <td>@good.Symbol</td>
                         <td>@good.QuantityAvailable.ToString("N0")</td>
                         <td>@good.VolumePerUnit</td>
-                        <td>@((good.PricePerUnit + good.Spread).ToString("N0"))@(ship != null ? "" : " credits")</td>
-                        <td>@((good.PricePerUnit - good.Spread).ToString("N0"))@(ship != null ? "" : " credits")</td>
+                        <td>@((good.PurchasePricePerUnit).ToString("N0"))@(ship != null ? "" : " credits")</td>
+                        <td>@((good.SellPricePerUnit).ToString("N0"))@(ship != null ? "" : " credits")</td>
                         @if (ship != null)
                         {
                             <td>@(ship.Ship.Cargo.FirstOrDefault(t => t.Good == good.Symbol)?.Quantity ?? 0)</td>

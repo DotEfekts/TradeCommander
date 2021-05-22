@@ -70,7 +70,7 @@ namespace TradeCommander.CommandHandlers
             }
             else if(args.Length == 3 && args[0].ToLower() == "buy")
             {
-                using var httpResult = await _http.PostAsJsonAsync("/users/" + _userInfo.Username + "/ships", new ShipyardPurchaseRequest
+                using var httpResult = await _http.PostAsJsonAsync("/my/ships", new ShipyardPurchaseRequest
                 {
                     Location = args[2].ToUpper(),
                     Type = args[1].ToUpper()

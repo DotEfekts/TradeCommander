@@ -28,29 +28,32 @@ namespace TradeCommander.CommandHandlers
                 return CommandResult.FAILURE;
             }
 
-            if (args.Length == 1 && (args[0] == "?" || args[0].ToLower() == "help"))
+            if (args.Length == 1)
             {
-                _console.WriteLine("LOGIN: Logs an existing user into the SpaceTraders API.");
-                _console.WriteLine("Usage: LOGIN <Username> <Token>");
-                return CommandResult.SUCCESS;
-            }
-            else if (args.Length != 2)
-                return CommandResult.INVALID;
-            else
-            {
-                await _userInfo.SetDetailsAsync(args[0], args[1]);
-                if (_userInfo.UserDetails != null)
+                if((args[0] == "?" || args[0].ToLower() == "help"))
                 {
-                    _console.Clear();
-                    _console.WriteLine("Welcome back, " + _userInfo.UserDetails.Username + ".");
-                    _console.WriteLine("For command list see HELP.");
+                    _console.WriteLine("LOGIN: Logs an existing user into the SpaceTraders API.");
+                    _console.WriteLine("Usage: LOGIN <Token>");
                     return CommandResult.SUCCESS;
                 }
                 else
-                    _console.WriteLine("Incorrect login details. Please try again.");
+                {
+                    await _userInfo.SetDetailsAsync(args[0]);
+                    if (_userInfo.UserDetails != null)
+                    {
+                        _console.Clear();
+                        _console.WriteLine("Welcome back, " + _userInfo.UserDetails.Username + ".");
+                        _console.WriteLine("For command list see HELP.");
+                        return CommandResult.SUCCESS;
+                    }
+                    else
+                        _console.WriteLine("Incorrect login details. Please try again.");
 
-                return CommandResult.FAILURE;
+                    return CommandResult.FAILURE;
+                }
             }
+
+            return CommandResult.INVALID;
         }
     }
 }

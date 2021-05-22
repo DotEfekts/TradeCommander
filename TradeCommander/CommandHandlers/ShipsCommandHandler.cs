@@ -13,7 +13,7 @@ namespace TradeCommander.CommandHandlers
     public class ShipsCommandHandler : ICommandHandlerAsync
     {
         private readonly UserProvider _userInfo;
-        private readonly ShipsProvider _shipInfo;
+        private readonly ShipsProvider _shipProvider;
         private readonly ConsoleOutput _console;
         private readonly NavigationManager _navManager;
         private readonly HttpClient _http;
@@ -21,7 +21,7 @@ namespace TradeCommander.CommandHandlers
 
         public ShipsCommandHandler(
             UserProvider userInfo,
-            ShipsProvider shipInfo,
+            ShipsProvider shipProvider,
             ConsoleOutput console,
             NavigationManager navManager,
             HttpClient http,
@@ -29,7 +29,7 @@ namespace TradeCommander.CommandHandlers
             )
         {
             _userInfo = userInfo;
-            _shipInfo = shipInfo;
+            _shipProvider = shipProvider;
             _console = console;
             _navManager = navManager;
             _http = http;
@@ -61,7 +61,7 @@ namespace TradeCommander.CommandHandlers
             }
             else if (!background && args.Length == 2 && args[1].ToLower() == "map")
             {
-                if (_shipInfo.TryGetShipDataByLocalId(args[0], out var shipData))
+                if (_shipProvider.TryGetShipDataByLocalId(args[0], out var shipData))
                 {
                     _console.WriteLine("Displaying local map for " + shipData.DisplayName + ".");
                     _navManager.NavigateTo(_navManager.BaseUri + "ships/" + shipData.ServerId + "/map");
@@ -73,7 +73,7 @@ namespace TradeCommander.CommandHandlers
             }
             else if (!background && args.Length == 2 && args[1].ToLower() == "cargo")
             {
-                if (_shipInfo.TryGetShipDataByLocalId(args[0], out var shipData))
+                if (_shipProvider.TryGetShipDataByLocalId(args[0], out var shipData))
                 {
                     _console.WriteLine("Displaying cargo for " + shipData.DisplayName + ".");
                     _navManager.NavigateTo(_navManager.BaseUri + "ships/" + shipData.ServerId + "/cargo");
@@ -85,11 +85,11 @@ namespace TradeCommander.CommandHandlers
             }
             else if (args.Length == 3 && args[1].ToLower() == "fly")
             {
-                if (_shipInfo.TryGetShipDataByLocalId(args[0], out var shipData))
+                if (_shipProvider.TryGetShipDataByLocalId(args[0], out var shipData))
                 {
                     if (!string.IsNullOrWhiteSpace(shipData.Ship.Location))
                     {
-                        using var httpResult = await _http.PostAsJsonAsync("/users/" + _userInfo.Username + "/flight-plans", new FlightRequest
+                        using var httpResult = await _http.PostAsJsonAsync("/my/flight-plans", new FlightRequest
                         {
                             ShipId = shipData.ServerId,
                             Destination = args[2].ToUpper()
@@ -99,7 +99,7 @@ namespace TradeCommander.CommandHandlers
                         {
                             var flightResult = await httpResult.Content.ReadFromJsonAsync<FlightResponse>(_serializerOptions);
 
-                            _shipInfo.AddFlightPlan(shipData.ServerId, flightResult.FlightPlan);
+                            _shipProvider.AddFlightPlan(shipData.ServerId, flightResult.FlightPlan);
 
                             if (!background)
                             {
@@ -121,7 +121,7 @@ namespace TradeCommander.CommandHandlers
                                 _console.WriteLine("Destination does not exist. Please check destination and try again.");
                             else
                             {
-                                await _shipInfo.RefreshShipData();
+                                await _shipProvider.RefreshShipData();
                                 _console.WriteLine(error.Error.Message);
                             }
                         }
@@ -136,11 +136,11 @@ namespace TradeCommander.CommandHandlers
             }
             else if (args.Length == 2 && args[1].ToLower() == "warp")
             {
-                if (_shipInfo.TryGetShipDataByLocalId(args[0], out var shipData))
+                if (_shipProvider.TryGetShipDataByLocalId(args[0], out var shipData))
                 {
                     if (!string.IsNullOrWhiteSpace(shipData.Ship.Location))
                     {
-                        using var httpResult = await _http.PostAsJsonAsync("/users/" + _userInfo.Username + "/warp-jump", new WarpRequest
+                        using var httpResult = await _http.PostAsJsonAsync("/my/warp-jumps", new WarpRequest
                         {
                             ShipId = shipData.ServerId
                         });
@@ -149,7 +149,7 @@ namespace TradeCommander.CommandHandlers
                         {
                             var flightResult = await httpResult.Content.ReadFromJsonAsync<FlightResponse>(_serializerOptions);
 
-                            _shipInfo.AddFlightPlan(shipData.ServerId, flightResult.FlightPlan);
+                            _shipProvider.AddFlightPlan(shipData.ServerId, flightResult.FlightPlan);
 
                             if (!background)
                             {
@@ -165,13 +165,13 @@ namespace TradeCommander.CommandHandlers
                             {
                                 _console.WriteLine("Ship was lost while attempting to traverse the wormhole.");
                                 _console.WriteLine("In an op shop somewhere, another teapot is sold.");
-                                await _shipInfo.RefreshShipData();
+                                await _shipProvider.RefreshShipData();
                             }
                             else if (error.Error.Message.StartsWith("Destination does not exist."))
                                 _console.WriteLine("Destination does not exist. Please check destination and try again.");
                             else
                             {
-                                await _shipInfo.RefreshShipData();
+                                await _shipProvider.RefreshShipData();
                                 _console.WriteLine(error.Error.Message);
                             }
                         }
@@ -186,11 +186,11 @@ namespace TradeCommander.CommandHandlers
             }
             else if (!background && args.Length == 3 && args[1].ToLower() == "rename")
             {
-                if (_shipInfo.TryGetShipDataByLocalId(args[0], out var shipData))
+                if (_shipProvider.TryGetShipDataByLocalId(args[0], out var shipData))
                 {
                     var lastName = shipData.DisplayName;
 
-                    _shipInfo.UpdateShipName(shipData.ServerId, args[2]);
+                    _shipProvider.UpdateShipName(shipData.ServerId, args[2]);
 
                     _console.WriteLine("Ship " + lastName + " renamed to " + shipData.DisplayName + ".");
                     return CommandResult.SUCCESS;
@@ -201,9 +201,9 @@ namespace TradeCommander.CommandHandlers
             }
             else if (!background && args.Length == 5 && args[1].ToLower() == "transfer")
             {
-                if (_shipInfo.TryGetShipDataByLocalId(args[0], out var shipData))
+                if (_shipProvider.TryGetShipDataByLocalId(args[0], out var shipData))
                 {
-                    if (_shipInfo.TryGetShipDataByLocalId(args[4], out var shipToData))
+                    if (_shipProvider.TryGetShipDataByLocalId(args[4], out var shipToData))
                     {
                         if (shipData.ServerId != shipToData.ServerId)
                         {
@@ -217,7 +217,7 @@ namespace TradeCommander.CommandHandlers
                                         if (quantity > cargo.Quantity)
                                             quantity = cargo.Quantity;
 
-                                        using var httpResult = await _http.PutAsJsonAsync("/users/" + _userInfo.Username + "/ships/" + shipData.ServerId + "/transfer", new TransferRequest
+                                        using var httpResult = await _http.PostAsJsonAsync("/my/ships/" + shipData.ServerId + "/transfer", new TransferRequest
                                         {
                                             Good = cargo.Good,
                                             Quantity = quantity,
@@ -228,8 +228,8 @@ namespace TradeCommander.CommandHandlers
                                         {
                                             var transferResult = await httpResult.Content.ReadFromJsonAsync<TransferResponse>(_serializerOptions);
 
-                                            _shipInfo.UpdateShipCargo(transferResult.FromShip.Id, transferResult.FromShip.Cargo);
-                                            _shipInfo.UpdateShipCargo(transferResult.ToShip.Id, transferResult.ToShip.Cargo);
+                                            _shipProvider.UpdateShipCargo(transferResult.FromShip.Id, transferResult.FromShip.Cargo);
+                                            _shipProvider.UpdateShipCargo(transferResult.ToShip.Id, transferResult.ToShip.Cargo);
 
                                             _console.WriteLine(quantity + " units of " + cargo.Good + " transferred from " + shipData.DisplayName + " to " + shipToData.DisplayName + ".");
 
@@ -239,7 +239,7 @@ namespace TradeCommander.CommandHandlers
                                         {
                                             var error = await httpResult.Content.ReadFromJsonAsync<ErrorResponse>(_serializerOptions);
 
-                                            await _shipInfo.RefreshShipData();
+                                            await _shipProvider.RefreshShipData();
                                             _console.WriteLine(error.Error.Message);
                                         }
                                     }
@@ -264,7 +264,7 @@ namespace TradeCommander.CommandHandlers
             }
             else if (!background && args.Length == 4 && args[1].ToLower() == "jettison")
             {
-                if (_shipInfo.TryGetShipDataByLocalId(args[0], out var shipData))
+                if (_shipProvider.TryGetShipDataByLocalId(args[0], out var shipData))
                 {
                     var cargo = shipData.Ship.Cargo.FirstOrDefault(t => t.Good.ToUpper() == args[2].ToUpper());
                     if (cargo != null)
@@ -274,7 +274,7 @@ namespace TradeCommander.CommandHandlers
                             if (quantity > cargo.Quantity)
                                 quantity = cargo.Quantity;
 
-                            using var httpResult = await _http.PutAsJsonAsync("/users/" + _userInfo.Username + "/ships/" + shipData.ServerId + "/jettison", new JettisonRequest
+                            using var httpResult = await _http.PostAsJsonAsync("/my/ships/" + shipData.ServerId + "/jettison", new JettisonRequest
                             {
                                 Good = cargo.Good,
                                 Quantity = quantity
@@ -290,7 +290,7 @@ namespace TradeCommander.CommandHandlers
                                 if (cargo.Quantity <= 0)
                                     cargoToAdd.Remove(cargo);
 
-                                _shipInfo.UpdateShipCargo(shipData.ServerId, cargoToAdd.ToArray());
+                                _shipProvider.UpdateShipCargo(shipData.ServerId, cargoToAdd.ToArray());
 
                                 _console.WriteLine(quantity + " units of " + cargo.Good + " jettisoned. " + jettisonResult.QuantityRemaining + " units remaining.");
 
@@ -300,7 +300,7 @@ namespace TradeCommander.CommandHandlers
                             {
                                 var error = await httpResult.Content.ReadFromJsonAsync<ErrorResponse>(_serializerOptions);
 
-                                await _shipInfo.RefreshShipData();
+                                await _shipProvider.RefreshShipData();
                                 _console.WriteLine(error.Error.Message);
                             }
                         }
@@ -316,9 +316,9 @@ namespace TradeCommander.CommandHandlers
             }
             else if (!background && args.Length == 2 && args[1].ToLower() == "scrap")
             {
-                if (_shipInfo.TryGetShipDataByLocalId(args[0], out var shipData))
+                if (_shipProvider.TryGetShipDataByLocalId(args[0], out var shipData))
                 {
-                    using var httpResult = await _http.DeleteAsync("/users/" + _userInfo.Username + "/ships/" + shipData.ServerId);
+                    using var httpResult = await _http.DeleteAsync("/my/ships/" + shipData.ServerId);
 
                     if (httpResult.IsSuccessStatusCode)
                     {
@@ -328,7 +328,7 @@ namespace TradeCommander.CommandHandlers
                         if (_navManager.Uri.EndsWith("/map/" + shipData.ServerId))
                             _navManager.NavigateTo(_navManager.BaseUri + "/map/");
 
-                        _ = _shipInfo.RefreshShipData();
+                        _ = _shipProvider.RefreshShipData();
                         _ = _userInfo.RefreshData();
 
                         _console.WriteLine("Ship " + name + " has been scrapped.");
@@ -340,7 +340,7 @@ namespace TradeCommander.CommandHandlers
                     {
                         var error = await httpResult.Content.ReadFromJsonAsync<ErrorResponse>(_serializerOptions);
 
-                        await _shipInfo.RefreshShipData();
+                        await _shipProvider.RefreshShipData();
                         _console.WriteLine(error.Error.Message);
                     }
                 }
@@ -350,7 +350,7 @@ namespace TradeCommander.CommandHandlers
             }
             else if (args.Length == 2 && args[1].ToLower() == "info")
             {
-                if (_shipInfo.TryGetShipDataByLocalId(args[0], out var shipData))
+                if (_shipProvider.TryGetShipDataByLocalId(args[0], out var shipData))
                 {
                     _console.WriteLine("Displaying info for " + shipData.DisplayName + ".");
                     await _console.WriteLine("Server Id: " + shipData.ServerId, 500);

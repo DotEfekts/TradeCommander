@@ -74,7 +74,7 @@ namespace TradeCommander.CommandHandlers
             }
             else if (args.Length == 2 && args[0].ToLower() == "take")
             {
-                using var httpResult = await _http.PostAsJsonAsync("/users/" + _userInfo.Username + "/loans", new LoanRequest
+                using var httpResult = await _http.PostAsJsonAsync("/my/loans", new LoanRequest
                 {
                     Type = args[1].ToUpper()
                 });
@@ -102,7 +102,7 @@ namespace TradeCommander.CommandHandlers
             }
             else if (args.Length == 2 && args[0].ToLower() == "pay")
             {
-                using var httpResult = await _http.PutAsJsonAsync("/users/" + _userInfo.Username + "/loans/" + args[1], new { });
+                using var httpResult = await _http.PutAsJsonAsync("/my/loans/" + args[1], new { });
 
 
                 if (httpResult.IsSuccessStatusCode)

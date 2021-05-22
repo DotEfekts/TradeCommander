@@ -8,7 +8,7 @@ namespace TradeCommander.Models
 {
     public class GlobalResponse
     {
-        public SpaceSystem[] Systems { get; set; }
+        public SpaceSystem System { get; set; }
     }
 
     public class SystemResponse

@@ -5,6 +5,7 @@
 @inject JsonSerializerOptions SerializerOptions
 @inject ConsoleOutput Console 
 @inject CommandManager CommandManager
+@inject ShipsProvider ShipProvider 
 
 <div class="layout-container">
     @if (loading)
@@ -35,7 +36,7 @@
                     </tr>
                 </thead>
                 <tbody>
-                    @foreach (var ship in ships)
+                    @foreach (var ship in ships.OrderBy(t => t.Type))
                     {
                     <tr>
                         <td>@ship.Type</td>
@@ -68,7 +69,7 @@
                     </tr>
                 </thead>
                 <tbody>
-                    @foreach (var location in locations)
+                    @foreach (var location in locations.OrderBy(t => t.Location))
                     {
                         <tr>
                             <td>@location.Location</td>
@@ -88,8 +89,8 @@
 
 @code
 {
-    [Parameter]
-    public string ShipType { get; set; }
+        [Parameter]
+        public string ShipType { get; set; }
     private bool loading = true;
     private ShipyardListing[] ships = null;
     private PurchaseLocation[] locations = null;
@@ -108,14 +109,35 @@
 
         try
         {
-            var shipyardListing = await Http.GetFromJsonAsync<ShipyardResponse>("/game/ships", SerializerOptions);
+            var systemsAvailable = ShipProvider.GetAvailableSystems(true);
+
+            var shipyardListing = new List<ShipyardListing>();
+            foreach (var system in systemsAvailable)
+            {
+                var listings = await Http.GetFromJsonAsync<ShipyardResponse>("/systems/" + system + "/ship-listings", SerializerOptions);
+                if(listings != null)
+                    shipyardListing.AddRange(listings.ShipListings);
+            }
+
             if (string.IsNullOrWhiteSpace(ShipType))
             {
-                ships = shipyardListing?.Ships;
+                ships = shipyardListing.GroupBy(t => t.Type)
+                    .Select(t => new ShipyardListing
+                    {
+                        Class = t.First().Class,
+                        Type = t.First().Type,
+                        Manufacturer = t.First().Manufacturer,
+                        MaxCargo = t.First().MaxCargo,
+                        Speed = t.First().Speed,
+                        Weapons = t.First().Weapons,
+                        Plating = t.First().Plating,
+                        PurchaseLocations = t.SelectMany(t => t.PurchaseLocations).ToArray()
+                    }).ToArray();
             }
             else
             {
-                locations = shipyardListing?.Ships.FirstOrDefault(t => t.Type == ShipType.ToUpper())?.PurchaseLocations;
+                locations = shipyardListing.Where(t => t.Type == ShipType.ToUpper())
+                    .SelectMany(t => t.PurchaseLocations).ToArray();
             }
         }
         catch (Exception) { }

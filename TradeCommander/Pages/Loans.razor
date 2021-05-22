@@ -121,7 +121,7 @@
 
         try
         {
-            var loanResponse = await Http.GetFromJsonAsync<LoansResponse>("/users/" + UserProvider.UserDetails.Username + "/loans", SerializerOptions);
+            var loanResponse = await Http.GetFromJsonAsync<LoansResponse>("/my/loans", SerializerOptions);
             if (loanResponse != null)
                 loans = loanResponse?.Loans.Where(t => showPaid ? t.Status == "PAID" : t.Status != "PAID").ToArray() ?? new Loan[0];
         }

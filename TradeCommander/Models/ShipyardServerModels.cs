@@ -13,7 +13,7 @@ namespace TradeCommander.Models
 
     public class ShipyardResponse
     {
-        public ShipyardListing[] Ships { get; set; }
+        public ShipyardListing[] ShipListings { get; set; }
     }
 
     public class ShipyardListing
@@ -33,5 +33,6 @@ namespace TradeCommander.Models
     {
         public string Location { get; set; }
         public int Price { get; set; }
+        public string System { get; set; }
     }
 }

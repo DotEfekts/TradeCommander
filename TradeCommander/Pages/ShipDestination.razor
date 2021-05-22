@@ -113,7 +113,7 @@
             {
                 try
                 {
-                    var locationInfo = await Http.GetFromJsonAsync<SystemResponse>("/game/systems/" + newSystem + "/locations", SerializerOptions);
+                    var locationInfo = await Http.GetFromJsonAsync<SystemResponse>("/systems/" + newSystem + "/locations", SerializerOptions);
                     locations = locationInfo?.Locations;
                     system = newSystem;
                 }

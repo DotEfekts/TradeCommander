@@ -36,8 +36,8 @@ namespace TradeCommander.Providers
             _serializerOptions = serializerOptions;
             _config = config;
 
-            if (_localStorage.ContainKey("Username") && _localStorage.ContainKey("Token"))
-                _ = SetDetailsAsync(_localStorage.GetItemAsString("Username"), _localStorage.GetItemAsString("Token"));
+            if (_localStorage.ContainKey("Token"))
+                _ = SetDetailsAsync(_localStorage.GetItemAsString("Token"));
             else
                 StartingDetailsChecked = true;
         }
@@ -54,7 +54,7 @@ namespace TradeCommander.Providers
             });
         }
 
-        public async Task<bool> SetDetailsAsync(string username, string token)
+        public async Task<bool> SetDetailsAsync(string token)
         {
             var initialCheck = !StartingDetailsChecked;
 
@@ -62,7 +62,7 @@ namespace TradeCommander.Providers
             {
                 var request = new HttpRequestMessage
                 {
-                    RequestUri = new Uri(_config["base_url"] + "/users/" + username),
+                    RequestUri = new Uri(_config["base_url"] + "/my/account"),
                     Method = HttpMethod.Get
                 };
                 request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
@@ -79,7 +79,6 @@ namespace TradeCommander.Providers
                     _http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
                     _localStorage.SetItem("Token", Token);
-                    _localStorage.SetItem("Username", Username);
 
                     StartingDetailsChecked = true;
                     UserUpdated?.Invoke(this, new UserEventArgs
@@ -112,7 +111,6 @@ namespace TradeCommander.Providers
             Username = null;
             Token = null;
             _localStorage.RemoveItem("Token");
-            _localStorage.RemoveItem("Username");
 
             UserUpdated?.Invoke(this, new UserEventArgs
             {
@@ -124,8 +122,9 @@ namespace TradeCommander.Providers
 
         public async Task RefreshData()
         {
-            var userResponse = await _http.GetFromJsonAsync<DetailsResponse>("/users/" + Username, _serializerOptions);
+            var userResponse = await _http.GetFromJsonAsync<DetailsResponse>("/my/account", _serializerOptions);
 
+            Username = userResponse.User.Username;
             UserDetails = userResponse.User;
 
             UserUpdated?.Invoke(this, new UserEventArgs

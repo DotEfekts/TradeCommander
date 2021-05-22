@@ -99,14 +99,14 @@ namespace TradeCommander.Providers
         {
             try
             {
-                var response = await _http.GetFromJsonAsync<MarketResponse>("/game/locations/" + symbol.ToUpper() + "/marketplace", _serializerOptions);
+                var response = await _http.GetFromJsonAsync<MarketResponse>("/locations/" + symbol.ToUpper() + "/marketplace", _serializerOptions);
                 if (_marketData != null && response != null)
                 {
-                    _marketData[response.Location.Symbol.ToUpper()] = new Market
+                    _marketData[symbol.ToUpper()] = new Market
                     {
-                        Symbol = response.Location.Symbol.ToUpper(),
+                        Symbol = symbol.ToUpper(),
                         RetrievedAt = DateTimeOffset.UtcNow,
-                        Marketplace = response.Location.Marketplace
+                        Marketplace = response.Marketplace
                     };
 
                     if (!chainedUpdate)
@@ -122,8 +122,9 @@ namespace TradeCommander.Providers
 
                 return response;
             }
-            catch (Exception)
+            catch (Exception e)
             {
+                Console.Error.WriteLine(e);
                 return null;
             }
         }

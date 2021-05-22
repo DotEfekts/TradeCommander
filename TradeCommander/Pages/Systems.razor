@@ -4,6 +4,7 @@
 @inject HttpClient Http
 @inject JsonSerializerOptions SerializerOptions
 @inject MarketProvider MarketProvider
+@inject ShipsProvider ShipProvider 
 
 <div class="layout-container">
     @if (scanning)
@@ -24,7 +25,6 @@
                     <tr>
                         <th>Symbol</th>
                         <th>Name</th>
-                        <th>Locations</th>
                         <th></th>
                     </tr>
                 </thead>
@@ -34,7 +34,6 @@
                     <tr>
                         <td>@system.Symbol</td>
                         <td>@system.Name</td>
-                        <td>@system.Locations.Length</td>
                         <td>
                             <div class="table-nav">
                                 <NavLink href="@("map/" + system.Symbol)"><div>Map</div></NavLink>
@@ -106,8 +105,17 @@
         {
             try
             {
-                var locationInfo = await Http.GetFromJsonAsync<GlobalResponse>("/game/systems", SerializerOptions);
-                systems = locationInfo?.Systems;
+                var systemsAvailable = ShipProvider.GetAvailableSystems(true);
+
+                var locationListing = new List<SpaceSystem>();
+                foreach (var system in systemsAvailable)
+                {
+                    var location = await Http.GetFromJsonAsync<GlobalResponse>("/systems/" + system, SerializerOptions);
+                    if (location != null)
+                        locationListing.Add(location.System);
+                }
+
+                systems = locationListing.ToArray();
             }
             catch (Exception) { }
         }
@@ -115,7 +123,7 @@
         {
             try
             {
-                var locationInfo = await Http.GetFromJsonAsync<SystemResponse>("/game/systems/" + SystemSymbol.ToUpper() + "/locations", SerializerOptions);
+                var locationInfo = await Http.GetFromJsonAsync<SystemResponse>("/systems/" + SystemSymbol.ToUpper() + "/locations", SerializerOptions);
                 locations = locationInfo?.Locations;
             }
             catch (Exception) { }

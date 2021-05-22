@@ -8,16 +8,6 @@ namespace TradeCommander.Models
 {
     public class MarketResponse
     {
-        public MarketLocation Location { get; set; }
-    }
-
-    public class MarketLocation
-    {
-        public string Symbol { get; set; }
-        public string Type { get; set; }
-        public string Name { get; set; }
-        public int X { get; set; }
-        public int Y { get; set; }
         public MarketGood[] Marketplace { get; set; }
     }
 
@@ -25,6 +15,8 @@ namespace TradeCommander.Models
     {
         public string Symbol { get; set; }
         public int PricePerUnit { get; set; }
+        public int PurchasePricePerUnit { get; set; }
+        public int SellPricePerUnit { get; set; }
         public int QuantityAvailable { get; set; }
         public int VolumePerUnit { get; set; }
         public int Spread { get; set; }

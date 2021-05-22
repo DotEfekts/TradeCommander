@@ -101,6 +101,18 @@ namespace TradeCommander.Providers
             return shipData != null;
         }
 
+        public string[] GetAvailableSystems(bool includeDefault = false)
+        {
+            var systemsAvailable = GetShipData().Select(t => t.Ship.Location ?? t.LastFlightPlan?.Destination ?? t.LastFlightPlan?.Departure)
+                .Where(t => !string.IsNullOrWhiteSpace(t))
+                .Select(t => t.Split('-')[0]).Distinct().ToList();
+
+            if (includeDefault && !systemsAvailable.Contains("OE"))
+                systemsAvailable.Add("OE");
+
+            return systemsAvailable.ToArray();
+        }
+
         public void UpdateShipName(string id, string name)
         {
             if (TryGetShipData(id, out var shipData))
@@ -277,7 +289,7 @@ namespace TradeCommander.Providers
             if (_userProvider.UserDetails != null)
             {
                 Dictionary<string, ShipData> newShipData = null;
-                var shipResponse = await _http.GetFromJsonAsync<ShipsResponse>("/users/" + _userProvider.UserDetails.Username + "/ships", _serializerOptions);
+                var shipResponse = await _http.GetFromJsonAsync<ShipsResponse>("/my/ships", _serializerOptions);
                 var ships = shipResponse?.Ships;
 
                 if (_localStorage.ContainKey("ShipData." + _userProvider.Username))
@@ -328,7 +340,7 @@ namespace TradeCommander.Providers
 
                         try
                         {
-                            var flightPlanResponse = await _http.GetFromJsonAsync<FlightResponse>("/users/" + _userProvider.UserDetails.Username + "/flight-plans/" + ship.Value.Ship.FlightPlanId, _serializerOptions);
+                            var flightPlanResponse = await _http.GetFromJsonAsync<FlightResponse>("/my/flight-plans/" + ship.Value.Ship.FlightPlanId, _serializerOptions);
                             ship.Value.LastFlightPlan = flightPlanResponse.FlightPlan;
                         }
                         catch (Exception) { }

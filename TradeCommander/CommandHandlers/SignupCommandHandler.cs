@@ -52,13 +52,13 @@ namespace TradeCommander.CommandHandlers
                 return CommandResult.INVALID;
             else
             {
-                var httpResult = await _http.PostAsJsonAsync("/users/" + args[0] + "/token", new { });
+                var httpResult = await _http.PostAsJsonAsync("/users/" + args[0] + "/claim", new { });
 
                 if (httpResult.IsSuccessStatusCode)
                 {
                     var signupResult = await httpResult.Content.ReadFromJsonAsync<SignupResponse>(_serializerOptions);
 
-                    await _userInfo.SetDetailsAsync(signupResult.User.Username, signupResult.Token);
+                    await _userInfo.SetDetailsAsync(signupResult.Token);
 
                     _console.Clear();
                     _console.WriteLine("Welcome, " + _userInfo.UserDetails.Username + ". Your token is: " + signupResult.Token);

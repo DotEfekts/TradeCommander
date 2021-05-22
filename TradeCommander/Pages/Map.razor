@@ -95,9 +95,9 @@
         {
             try
             {
-                if (systemSymbol != null && ships.Any(s => s.Ship.Location?.StartsWith(systemSymbol + "-") ?? s.LastFlightPlan.Destination?.StartsWith(systemSymbol + "-") ?? s.LastFlightPlan.Departure?.StartsWith(systemSymbol + "-") ?? false))
+                if (systemSymbol != null && ShipProvider.GetAvailableSystems().Contains(systemSymbol))
                 {
-                    var systemFlightsResponse = await Http.GetFromJsonAsync<SystemFlightPlansResponse>("/game/systems/" + systemSymbol.ToUpper() + "/flight-plans", SerializerOptions);
+                    var systemFlightsResponse = await Http.GetFromJsonAsync<SystemFlightPlansResponse>("/systems/" + systemSymbol.ToUpper() + "/flight-plans", SerializerOptions);
 
                     var timeNow = DateTimeOffset.UtcNow;
                     var ownPlans = ships.Select(s => s.LastFlightPlan?.Id);
@@ -149,7 +149,7 @@
 
         try
         {
-            var locationInfo = await Http.GetFromJsonAsync<SystemResponse>("/game/systems/" + symbol.ToUpper() + "/locations", SerializerOptions);
+            var locationInfo = await Http.GetFromJsonAsync<SystemResponse>("/systems/" + symbol.ToUpper() + "/locations", SerializerOptions);
             locations = locationInfo?.Locations;
             UpdateSystemShips(null, null);
             await InvokeMapDraw();

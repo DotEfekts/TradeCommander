@@ -36,7 +36,7 @@
                     </tr>
                 </thead>
                 <tbody>
-                    @foreach (var cargo in shipData.Ship.Cargo)
+                    @foreach (var cargo in shipData.Ship.Cargo.OrderBy(t => t.Good))
                     {
                     <tr>
                         <td>@cargo.Good</td>

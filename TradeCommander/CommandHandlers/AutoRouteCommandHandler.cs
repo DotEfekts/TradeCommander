@@ -10,19 +10,19 @@ namespace TradeCommander.CommandHandlers
 {
     public class AutoRouteCommandHandler : ICommandHandler
     {
-        private readonly ShipsProvider _shipInfo;
+        private readonly ShipsProvider _shipProvider;
         private readonly AutoRouteProvider _routeInfo;
         private readonly ConsoleOutput _console;
         private readonly NavigationManager _navManager;
 
         public AutoRouteCommandHandler(
-            ShipsProvider shipInfo,
+            ShipsProvider shipProvider,
             AutoRouteProvider routeInfo,
             ConsoleOutput console,
             NavigationManager navManager
             )
         {
-            _shipInfo = shipInfo;
+            _shipProvider = shipProvider;
             _routeInfo = routeInfo;
             _console = console;
             _navManager = navManager;
@@ -158,7 +158,7 @@ namespace TradeCommander.CommandHandlers
             {
                 if (int.TryParse(args[1], out int id) && _routeInfo.TryGetRoute(id, out AutoRoute route))
                 {
-                    if (_shipInfo.TryGetShipDataByLocalId(args[2], out var shipData))
+                    if (_shipProvider.TryGetShipDataByLocalId(args[2], out var shipData))
                     {
                         var currentRoute = _routeInfo.GetShipRoute(shipData.ServerId);
                         if (currentRoute == null || currentRoute == route)
@@ -186,7 +186,7 @@ namespace TradeCommander.CommandHandlers
             {
                 if (int.TryParse(args[1], out int id) && _routeInfo.TryGetRoute(id, out AutoRoute route))
                 {
-                    if (_shipInfo.TryGetShipDataByLocalId(args[2], out var shipData))
+                    if (_shipProvider.TryGetShipDataByLocalId(args[2], out var shipData))
                     {
                         var routeShip = route.Ships.FirstOrDefault(t => t.ShipId == shipData.ServerId);
                         if (routeShip != null)
